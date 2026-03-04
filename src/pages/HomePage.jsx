@@ -35,7 +35,7 @@ export default function HomePage() {
   };
 
   const handleAddBlock = () => {
-    setEditingBlocks([...editingBlocks, { id: Date.now().toString(), content: '<h2>New HTML Block</h2><p>Write your content here...</p>' }]);
+    setEditingBlocks([...editingBlocks, { id: Date.now().toString(), title: '', content: '<h2>New HTML Block</h2><p>Write your content here...</p>' }]);
   };
 
   const handleRemoveBlock = (id) => {
@@ -44,6 +44,10 @@ export default function HomePage() {
 
   const handleBlockChange = (id, newContent) => {
     setEditingBlocks(editingBlocks.map(b => b.id === id ? { ...b, content: newContent } : b));
+  };
+
+  const handleTitleChange = (id, newTitle) => {
+    setEditingBlocks(editingBlocks.map(b => b.id === id ? { ...b, title: newTitle } : b));
   };
 
   return (
@@ -100,11 +104,17 @@ export default function HomePage() {
                {editingBlocks.map((block, index) => (
                  <div key={block.id} className="border rounded-md p-4 bg-gray-50 relative">
                    <div className="flex justify-between items-center mb-2">
-                     <span className="font-semibold text-gray-700">Block #{index + 1}</span>
+                     <span className="font-semibold text-gray-700">{block.title || `Block #${index + 1}`}</span>
                      <Button variant="ghost" size="icon" className="text-red-500 hover:bg-red-100 h-8 w-8" onClick={() => handleRemoveBlock(block.id)}>
                        <Trash className="h-4 w-4" />
                      </Button>
                    </div>
+                   <input
+                     className="w-full p-2 mb-2 border rounded text-sm font-medium focus:outline-blue-500"
+                     value={block.title || ''}
+                     onChange={(e) => handleTitleChange(block.id, e.target.value)}
+                     placeholder="Customize block name (e.g., Notice Board)"
+                   />
                    <textarea
                      className="w-full h-32 p-3 border rounded text-sm font-mono focus:outline-blue-500"
                      value={block.content}
