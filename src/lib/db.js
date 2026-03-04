@@ -5,7 +5,8 @@ import {
   getDoc, 
   setDoc, 
   getDocs, 
-  addDoc
+  addDoc,
+  deleteDoc
 } from 'firebase/firestore';
 
 const SETTINGS_DOC_ID = 'instituteSettings';
@@ -65,6 +66,11 @@ export const dbService = {
     return sessionName;
   },
 
+  deleteSession: async (sessionName) => {
+    const docRef = doc(db, COLLECTION_SESSIONS, sessionName);
+    await deleteDoc(docRef);
+  },
+
   getSessionDetails: async (sessionName) => {
     if (!sessionName) return {};
     try {
@@ -108,6 +114,11 @@ export const dbService = {
     return className;
   },
 
+  deleteClass: async (session, className) => {
+    const docRef = doc(db, COLLECTION_SESSIONS, session, 'classes', className);
+    await deleteDoc(docRef);
+  },
+
   // Exams: stored as subcollection 'exams' under class doc
   getExams: async (session, classId) => {
     try {
@@ -129,6 +140,11 @@ export const dbService = {
     return data ? data.config : null;
   },
 
+  deleteExam: async (session, classId, examId) => {
+    const docRef = doc(db, COLLECTION_SESSIONS, session, 'classes', classId, 'exams', examId);
+    await deleteDoc(docRef);
+  },
+
   saveExamConfig: async (session, classId, examId, config) => {
     const docRef = doc(db, COLLECTION_SESSIONS, session, 'classes', classId, 'exams', examId);
     await setDoc(docRef, { config }, { merge: true });
@@ -143,6 +159,30 @@ export const dbService = {
       return snap.docs.map(d => d.data());
     } catch (error) {
       console.error("Error fetching students:", error);
+      return [];
+    }
+  },
+
+  // Get all unique students across all exams in a specific class
+  getClassStudentsRegistry: async (session, classId) => {
+    try {
+      const exams = await dbService.getExams(session, classId);
+      const studentMap = new Map(); // RollNo -> Name
+
+      for (const examId of exams) {
+        const students = await dbService.getStudents(session, classId, examId);
+        students.forEach(student => {
+          if (student.rollNo) {
+            // Keep the first name found, or overwrite if empty
+            if (!studentMap.has(student.rollNo) || (student.name && !studentMap.get(student.rollNo))) {
+              studentMap.set(student.rollNo, student.name || '');
+            }
+          }
+        });
+      }
+      return Array.from(studentMap.entries()).map(([rollNo, name]) => ({ rollNo, name }));
+    } catch (error) {
+      console.error("Error fetching class registry:", error);
       return [];
     }
   },

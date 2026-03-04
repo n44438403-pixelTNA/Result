@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { Plus, ChevronRight, ChevronDown, Edit, FileText, UserCircle, Layers, Save, Building } from 'lucide-react';
+import { Plus, ChevronRight, ChevronDown, Edit, FileText, UserCircle, Layers, Save, Building, Trash } from 'lucide-react';
 
 export default function BrowsePage() {
   const { user, loading: authLoading } = useAuth();
@@ -131,6 +131,32 @@ export default function BrowsePage() {
     setExams(prev => ({ ...prev, [key]: examData }));
   };
 
+  const handleDeleteSession = async (sessionName) => {
+    if (window.confirm(`Are you sure you want to delete session "${sessionName}" and all its data?`)) {
+      await db.deleteSession(sessionName);
+      loadSessions();
+      setExpandedSession(null);
+    }
+  };
+
+  const handleDeleteClass = async (sessionName, className) => {
+    if (window.confirm(`Are you sure you want to delete class "${className}" from session "${sessionName}"?`)) {
+      await db.deleteClass(sessionName, className);
+      const classData = await db.getClasses(sessionName);
+      setClasses(prev => ({ ...prev, [sessionName]: classData }));
+      setExpandedClass(null);
+    }
+  };
+
+  const handleDeleteExam = async (sessionName, className, examName) => {
+    if (window.confirm(`Are you sure you want to delete exam "${examName}" from class "${className}"?`)) {
+      await db.deleteExam(sessionName, className, examName);
+      const key = `${sessionName}-${className}`;
+      const examData = await db.getExams(sessionName, className);
+      setExams(prev => ({ ...prev, [key]: examData }));
+    }
+  };
+
   const navigateToExam = (session, className, examName) => {
     // URL encode components to be safe
     navigate(`/exam/${encodeURIComponent(session)}/${encodeURIComponent(className)}/${encodeURIComponent(examName)}`);
@@ -180,16 +206,29 @@ export default function BrowsePage() {
                     {session}
                   </div>
                   {user && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowAddClass(showAddClass === session ? null : session);
-                      }}
-                    >
-                      <Plus className="mr-2 h-4 w-4" /> Add Class
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowAddClass(showAddClass === session ? null : session);
+                        }}
+                      >
+                        <Plus className="mr-2 h-4 w-4" /> Add Class
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteSession(session);
+                        }}
+                      >
+                        <Trash className="h-4 w-4" />
+                      </Button>
+                    </div>
                   )}
                 </div>
 
@@ -244,17 +283,30 @@ export default function BrowsePage() {
                             {className}
                           </div>
                           {user && (
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                const key = `${session}-${className}`;
-                                setShowAddExam(showAddExam === key ? null : key);
-                              }}
-                            >
-                              <Plus className="mr-2 h-4 w-4" /> Add Exam
-                            </Button>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const key = `${session}-${className}`;
+                                  setShowAddExam(showAddExam === key ? null : key);
+                                }}
+                              >
+                                <Plus className="mr-2 h-4 w-4" /> Add Exam
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleDeleteClass(session, className);
+                                }}
+                              >
+                                <Trash className="h-4 w-4" />
+                              </Button>
+                            </div>
                           )}
                         </div>
 
@@ -283,10 +335,25 @@ export default function BrowsePage() {
                                             <FileText className="mr-2 h-4 w-4 text-blue-500" />
                                             {exam}
                                         </div>
-                                        <Button size="sm" variant={user ? "outline" : "default"} onClick={() => navigateToExam(session, className, exam)}>
-                                            {user ? <Edit className="mr-2 h-4 w-4" /> : <FileText className="mr-2 h-4 w-4" />}
-                                            {user ? "Edit / View" : "View Results"}
-                                        </Button>
+                                        <div className="flex items-center gap-2">
+                                            {user && (
+                                              <Button
+                                                variant="ghost"
+                                                size="icon"
+                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleDeleteExam(session, className, exam);
+                                                }}
+                                              >
+                                                <Trash className="h-4 w-4" />
+                                              </Button>
+                                            )}
+                                            <Button size="sm" variant={user ? "outline" : "default"} onClick={() => navigateToExam(session, className, exam)}>
+                                                {user ? <Edit className="mr-2 h-4 w-4" /> : <FileText className="mr-2 h-4 w-4" />}
+                                                {user ? "Edit / View" : "View Results"}
+                                            </Button>
+                                        </div>
                                     </div>
                                 ))}
 
