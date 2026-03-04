@@ -8,7 +8,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card'
 import { Plus, ChevronRight, ChevronDown, Edit, FileText, UserCircle } from 'lucide-react';
 
 export default function BrowsePage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [sessions, setSessions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedSession, setExpandedSession] = useState(null);
@@ -30,7 +30,12 @@ export default function BrowsePage() {
       let data = await db.getSessions();
       if (data.length === 0) {
         // Auto-create 2026-27 session per requirements if none exist
-        await db.createSession('2026-27');
+        // Wrap this in a try-catch so it doesn't fail the whole load if it's permission denied.
+        try {
+            if (user) {
+               await db.createSession('2026-27');
+            }
+        } catch(e) { console.error(e) }
         data = ['2026-27'];
       }
       setSessions(data);
@@ -38,14 +43,15 @@ export default function BrowsePage() {
        console.error("Failed to load sessions:", error);
        // Fallback for permission errors / no DB access
        setSessions(['2026-27']);
-    } finally {
-       setLoading(false);
     }
+    setLoading(false);
   };
 
   useEffect(() => {
-    loadSessions();
-  }, []);
+    if (!authLoading) {
+      loadSessions();
+    }
+  }, [user, authLoading]);
 
   const toggleSession = async (session) => {
     if (expandedSession === session) {
@@ -109,7 +115,7 @@ export default function BrowsePage() {
     navigate(`/exam/${encodeURIComponent(session)}/${encodeURIComponent(className)}/${encodeURIComponent(examName)}`);
   };
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) return <div className="p-8 text-center text-gray-500">Loading Sessions...</div>;
 
   return (
     <div className="space-y-6">

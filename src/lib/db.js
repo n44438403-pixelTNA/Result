@@ -53,7 +53,7 @@ export const dbService = {
       return snap.docs.map(d => d.id);
     } catch (error) {
       console.error("Error fetching sessions:", error);
-      return [];
+      throw error; // Let the caller handle the fallback
     }
   },
   

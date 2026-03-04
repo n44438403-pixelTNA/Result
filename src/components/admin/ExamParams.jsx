@@ -2,80 +2,105 @@ import React, { useState, useEffect } from 'react';
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../ui/Card';
-import { Trash } from 'lucide-react';
+import { Trash, Plus } from 'lucide-react';
 
 export default function ExamParams({ config, onSave }) {
-  const [subjects, setSubjects] = useState(config?.subjects || []);
-  const [maxMarks, setMaxMarks] = useState(config?.maxMarks || 100);
-  const [newSubject, setNewSubject] = useState('');
+  const [tests, setTests] = useState([]);
 
   useEffect(() => {
     if (config) {
-      setSubjects(config.subjects || []);
-      setMaxMarks(config.maxMarks || 100);
+      if (config.tests && Array.isArray(config.tests)) {
+        setTests(config.tests);
+      } else if (config.subjects && Array.isArray(config.subjects)) {
+        // Migrate old config format
+        const migratedTests = config.subjects.map((sub, index) => ({
+          id: `test_${Date.now()}_${index}`,
+          name: sub,
+          maxMarks: config.maxMarks || 100,
+          date: ''
+        }));
+        setTests(migratedTests);
+      } else {
+        setTests([]);
+      }
     }
   }, [config]);
 
-  const addSubject = () => {
-    if (newSubject && !subjects.includes(newSubject)) {
-      setSubjects([...subjects, newSubject]);
-      setNewSubject('');
-    }
+  const addTest = () => {
+    setTests([...tests, {
+      id: `test_${Date.now()}`,
+      name: `Test ${tests.length + 1}`,
+      maxMarks: 100,
+      date: new Date().toISOString().split('T')[0]
+    }]);
   };
 
-  const removeSubject = (sub) => {
-    setSubjects(subjects.filter(s => s !== sub));
+  const updateTest = (id, field, value) => {
+    setTests(tests.map(test => test.id === id ? { ...test, [field]: value } : test));
+  };
+
+  const removeTest = (id) => {
+    setTests(tests.filter(test => test.id !== id));
   };
 
   const handleSave = () => {
-    onSave({ maxMarks: parseInt(maxMarks), subjects });
+    // Save tests configuration
+    onSave({ tests });
   };
 
   return (
     <Card className="mb-6">
       <CardHeader>
-        <CardTitle>Exam Configuration</CardTitle>
+        <CardTitle className="flex justify-between items-center">
+          <span>Exam Configuration (Tests/Columns)</span>
+          <Button variant="outline" size="sm" onClick={addTest}>
+            <Plus className="h-4 w-4 mr-2" /> Add Column
+          </Button>
+        </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Max Marks (per subject)</label>
-            <Input
-              type="number"
-              value={maxMarks}
-              onChange={(e) => setMaxMarks(e.target.value)}
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-1">Add Subject</label>
-            <div className="flex gap-2">
-              <Input
-                value={newSubject}
-                onChange={(e) => setNewSubject(e.target.value)}
-                placeholder="e.g. Mathematics"
-                onKeyDown={(e) => e.key === 'Enter' && addSubject()}
-              />
-              <Button onClick={addSubject} type="button">Add</Button>
-            </div>
-          </div>
-        </div>
-
-        <div>
-          <h4 className="text-sm font-medium mb-2">Subjects List:</h4>
-          <div className="flex flex-wrap gap-2">
-            {subjects.length === 0 && <span className="text-gray-500 text-sm">No subjects added.</span>}
-            {subjects.map((sub) => (
-              <div key={sub} className="flex items-center bg-gray-100 px-3 py-1 rounded-full text-sm">
-                {sub}
-                <button onClick={() => removeSubject(sub)} className="ml-2 text-red-500 hover:text-red-700">
-                  <Trash className="h-3 w-3" />
-                </button>
+        {tests.length === 0 ? (
+          <p className="text-gray-500 text-sm text-center py-4">No columns added. Add a column to start tracking marks.</p>
+        ) : (
+          <div className="space-y-4">
+            {tests.map((test) => (
+              <div key={test.id} className="flex flex-col sm:flex-row gap-3 items-end bg-gray-50 p-3 rounded-lg border border-gray-100">
+                <div className="flex-1 w-full">
+                  <label className="block text-xs font-medium mb-1 text-gray-500">Column Name</label>
+                  <Input
+                    value={test.name}
+                    onChange={(e) => updateTest(test.id, 'name', e.target.value)}
+                    placeholder="e.g. Math 1"
+                    className="h-9"
+                  />
+                </div>
+                <div className="w-full sm:w-32">
+                  <label className="block text-xs font-medium mb-1 text-gray-500">Date</label>
+                  <Input
+                    type="date"
+                    value={test.date}
+                    onChange={(e) => updateTest(test.id, 'date', e.target.value)}
+                    className="h-9"
+                  />
+                </div>
+                <div className="w-full sm:w-24">
+                  <label className="block text-xs font-medium mb-1 text-gray-500">Full Marks</label>
+                  <Input
+                    type="number"
+                    value={test.maxMarks}
+                    onChange={(e) => updateTest(test.id, 'maxMarks', parseInt(e.target.value) || 0)}
+                    className="h-9"
+                  />
+                </div>
+                <Button variant="ghost" size="icon" onClick={() => removeTest(test.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 h-9 w-9 shrink-0">
+                  <Trash className="h-4 w-4" />
+                </Button>
               </div>
             ))}
           </div>
-        </div>
+        )}
         
-        <div className="mt-6 flex justify-end">
+        <div className="mt-6 flex justify-end pt-4 border-t">
           <Button onClick={handleSave}>Save Configuration</Button>
         </div>
       </CardContent>
