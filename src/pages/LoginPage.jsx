@@ -20,7 +20,11 @@ export default function LoginPage() {
     setError('');
     const success = await login(email, password);
     if (success) {
-      navigate(from, { replace: true });
+      // Small delay to allow Firebase onAuthStateChanged to propagate to React Context
+      // before we navigate away, ensuring the next page sees user !== null
+      setTimeout(() => {
+        navigate(from, { replace: true });
+      }, 300);
     } else {
       setError('Invalid credentials or authentication failed.');
     }
@@ -39,17 +43,26 @@ export default function LoginPage() {
               <Input
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                    setEmail(e.target.value);
+                    if (error) setError('');
+                }}
                 placeholder="admin@example.com"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1">Password</label>
+              <label className="block text-sm font-medium mb-1">
+                 Password
+                 {email === 'nadimanwar794@gmail.com' && <span className="text-xs text-blue-500 ml-2 font-normal">(Default: ns841414)</span>}
+              </label>
               <Input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                    setPassword(e.target.value);
+                    if (error) setError('');
+                }}
                 placeholder="********"
                 required
               />
