@@ -45,6 +45,18 @@ export const dbService = {
     return settings;
   },
 
+  getCustomHtmlBlocks: async () => {
+    const docRef = doc(db, 'settings', 'customHtmlBlocks');
+    const data = await safeGet(docRef);
+    return data?.blocks || [];
+  },
+
+  saveCustomHtmlBlocks: async (blocks) => {
+    const docRef = doc(db, 'settings', 'customHtmlBlocks');
+    await setDoc(docRef, { blocks }, { merge: true });
+    return blocks;
+  },
+
   // Sessions: stored as documents in 'sessions' collection
   getSessions: async () => {
     try {
