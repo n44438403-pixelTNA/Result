@@ -1,12 +1,14 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/Button';
-import { LogOut, Home, ArrowLeft } from 'lucide-react';
+import { LogOut, Home, ArrowLeft, Settings } from 'lucide-react';
+import AdminManager from './admin/AdminManager';
 
 export default function MainLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [isAdminManagerOpen, setIsAdminManagerOpen] = useState(false);
 
   const handleLogout = async () => {
     await logout();
@@ -26,14 +28,15 @@ export default function MainLayout() {
         </div>
         <div>
           {user ? (
-            <Button variant="outline" onClick={handleLogout} className="text-red-600 hover:text-red-700 hover:bg-red-50">
-              <LogOut className="mr-2 h-4 w-4" /> Logout Admin
-            </Button>
-          ) : (
-            <Button variant="outline" onClick={() => navigate('/login')}>
-              Admin Login
-            </Button>
-          )}
+            <div className="flex items-center gap-2">
+              <Button variant="outline" onClick={() => setIsAdminManagerOpen(true)} className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                <Settings className="mr-2 h-4 w-4" /> Settings
+              </Button>
+              <Button variant="outline" onClick={handleLogout} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                <LogOut className="mr-2 h-4 w-4" /> Logout
+              </Button>
+            </div>
+          ) : null}
         </div>
       </div>
       <div className="w-full max-w-5xl px-4 flex-1">
@@ -42,6 +45,10 @@ export default function MainLayout() {
       <footer className="mt-10 text-gray-400 text-sm pb-6">
         &copy; {new Date().getFullYear()} Result Management System
       </footer>
+
+      {user && (
+         <AdminManager isOpen={isAdminManagerOpen} onClose={() => setIsAdminManagerOpen(false)} />
+      )}
     </div>
   );
 }

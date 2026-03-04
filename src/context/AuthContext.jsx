@@ -4,7 +4,9 @@ import {
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut, 
-  onAuthStateChanged 
+  onAuthStateChanged,
+  updateEmail,
+  updatePassword
 } from 'firebase/auth';
 
 const AuthContext = createContext();
@@ -23,49 +25,66 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const login = async (email, password) => {
-    // Firebase requires passwords to be at least 6 characters long.
-    // We pad with 'X' up to 6 characters so old passwords like 'NSTA'
-    // work if they were originally padded this way, but we MUST ALSO
-    // check if it was previously padded with '123' by a previous version
-    // of the codebase to prevent locking out the user.
-    let genericPadded = password;
-    while (genericPadded.length < 6) {
-       genericPadded += 'X';
-    }
-
-    let legacyPadded = password;
-    if (password === 'NSTA') {
-        legacyPadded = 'NSTA123';
-    }
-
     try {
-      // Try logging in with generic padding first
-      await signInWithEmailAndPassword(auth, email, genericPadded);
+      await signInWithEmailAndPassword(auth, email, password);
       return true;
     } catch (error) {
-        try {
-            // Try legacy padding just in case the account was already created with it
-            await signInWithEmailAndPassword(auth, email, legacyPadded);
-            return true;
-        } catch (error2) {
-             console.error("Login Error:", error2);
+      // Legacy auto-creation for the main admin if the account doesn't exist yet
+      if (email === 'nadimanwar794@gmail.com' && (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential')) {
+         try {
+             // Force password to be at least 6 chars for firebase if they type a short one
+             let padded = password;
+             while(padded.length < 6) padded += 'X';
 
-             // If both logins fail, attempt to auto-create the account using the legacy padded password
-             // to maintain consistency with the user's previously created database if any.
-             // SECURITY: Only allow auto-creation for the specific admin email to prevent an open registration vulnerability.
-             if (email === 'nadimanwar794@gmail.com') {
-                 try {
-                    console.log("Admin account not found. Attempting to auto-create...");
-                    await createUserWithEmailAndPassword(auth, email, legacyPadded);
-                    return true;
-                 } catch (createError) {
-                    console.error("Auto-creation failed:", createError);
-                    return false;
-                 }
-             } else {
-                 return false;
-             }
-        }
+             await createUserWithEmailAndPassword(auth, email, padded);
+             return true;
+         } catch (createErr) {
+             console.error("Login/Create Error:", createErr);
+             return false;
+         }
+      }
+      console.error("Login Error:", error);
+      return false;
+    }
+  };
+
+  const registerAdmin = async (email, password) => {
+    try {
+      if (password.length < 6) throw new Error("Password must be at least 6 characters");
+      await createUserWithEmailAndPassword(auth, email, password);
+      return { success: true };
+    } catch (error) {
+      console.error("Registration Error:", error);
+      return { success: false, message: error.message };
+    }
+  };
+
+  const updateAdminEmail = async (newEmail) => {
+    try {
+      if (auth.currentUser) {
+        await updateEmail(auth.currentUser, newEmail);
+        return { success: true };
+      }
+      return { success: false, message: "No user logged in." };
+    } catch (error) {
+      console.error("Update Email Error:", error);
+      // Commonly throws if recent login is required.
+      return { success: false, message: error.message };
+    }
+  };
+
+  const updateAdminPassword = async (newPassword) => {
+    try {
+      if (newPassword.length < 6) throw new Error("Password must be at least 6 characters");
+      if (auth.currentUser) {
+        await updatePassword(auth.currentUser, newPassword);
+        return { success: true };
+      }
+      return { success: false, message: "No user logged in." };
+    } catch (error) {
+      console.error("Update Password Error:", error);
+      // Commonly throws if recent login is required.
+      return { success: false, message: error.message };
     }
   };
 
@@ -78,7 +97,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, registerAdmin, updateAdminEmail, updateAdminPassword, loading }}>
       {children}
     </AuthContext.Provider>
   );
