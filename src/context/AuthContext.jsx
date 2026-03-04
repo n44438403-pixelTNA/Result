@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth } from '../lib/firebase';
 import { 
-  signInWithEmailAndPassword, 
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
   signOut, 
   onAuthStateChanged 
 } from 'firebase/auth';
@@ -24,11 +25,23 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       // Must authenticate with Firebase so we get a valid auth token to write to the database
-      // If nadimanwar794@gmail.com / NSTA is not created yet, you will need to create it in the Firebase Auth console
       await signInWithEmailAndPassword(auth, email, password);
       return true;
     } catch (error) {
       console.error("Login Error:", error);
+
+      // Auto-create the admin account if it doesn't exist yet
+      if (email === 'nadimanwar794@gmail.com' && password === 'NSTA') {
+        try {
+          console.log("Attempting to auto-create admin account...");
+          await createUserWithEmailAndPassword(auth, email, password);
+          return true;
+        } catch (createError) {
+          console.error("Auto-creation failed:", createError);
+          return false;
+        }
+      }
+
       return false;
     }
   };
