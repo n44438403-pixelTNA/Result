@@ -55,8 +55,8 @@ export default function HomePage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 w-full max-w-3xl">
-        <Card className="hover:shadow-lg transition-shadow">
+      <div className="flex justify-center w-full max-w-xl">
+        <Card className="hover:shadow-lg transition-shadow w-full">
           <CardHeader>
              <CardTitle className="text-xl flex items-center justify-center gap-2">
                <FileText className="h-6 w-6 text-blue-600" /> View Results
@@ -68,26 +68,6 @@ export default function HomePage() {
              </p>
              <Button onClick={() => navigate('/browse')} className="w-full text-lg h-12" variant="default">
                 Go to Results
-             </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="hover:shadow-lg transition-shadow">
-          <CardHeader>
-             <CardTitle className="text-xl flex items-center justify-center gap-2">
-               <UserCircle className="h-6 w-6 text-gray-700" /> Administration
-             </CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col items-center p-6 space-y-4">
-             <p className="text-center text-gray-500">
-               Log in to manage sessions, classes, exams, and student result data.
-             </p>
-             <Button
-                onClick={() => navigate('/login')}
-                className="w-full text-lg h-12"
-                variant={user ? "outline" : "secondary"}
-             >
-                {user ? "Logged In as Admin" : "Admin Login"}
              </Button>
           </CardContent>
         </Card>
@@ -149,6 +129,16 @@ export default function HomePage() {
           ))
         )}
       </div>
+
+
+        {/* Hidden/Subtle Admin Login */}
+        {!user && (
+          <div className="mt-12 text-center w-full">
+             <button onClick={() => navigate('/login')} className="text-[10px] text-gray-300 hover:text-gray-400 opacity-50">
+               .
+             </button>
+          </div>
+        )}
 
     </div>
   );
