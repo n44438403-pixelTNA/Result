@@ -177,33 +177,47 @@ export default function ExamResults() {
   const openGraph = (student) => {
       if (!config?.subjectGroups) return;
 
-      // Kam Jayada Trend Graph Logic: Aggregate by Test (across subjects if same date/name)
-      const testAggregates = new Map(); // testId or date -> { obtained, max, label }
+      // View 1: Test-wise (Timeline) - Aggregating by test date/name across subjects
+      const testAggregates = new Map();
+      // View 2: Subject-wise - Aggregating by subject name
+      const subjectAggregates = new Map();
 
       config.subjectGroups.forEach(group => {
+          const subKey = group.subjectName;
+          if (!subjectAggregates.has(subKey)) {
+              subjectAggregates.set(subKey, { obtained: 0, max: 0, label: subKey });
+          }
+          const subAgg = subjectAggregates.get(subKey);
+
           group.tests.forEach(test => {
-              const key = test.date || test.name; // Use date as timeline key, fallback to name
+              const key = test.date || test.name;
               const marks = parseInt(student.marks?.[test.id]) || 0;
               const max = parseInt(test.maxMarks) || 0;
 
               if (!testAggregates.has(key)) {
                   testAggregates.set(key, { obtained: 0, max: 0, label: key });
               }
-              const agg = testAggregates.get(key);
-              agg.obtained += marks;
-              agg.max += max;
+              const testAgg = testAggregates.get(key);
+              testAgg.obtained += marks;
+              testAgg.max += max;
+
+              subAgg.obtained += marks;
+              subAgg.max += max;
           });
       });
 
-      // Convert to array and sort by date/label (very rough sort)
-      const sortedKeys = Array.from(testAggregates.keys()).sort();
-      const data = sortedKeys.map(key => {
-          const agg = testAggregates.get(key);
-          const perc = agg.max > 0 ? ((agg.obtained / agg.max) * 100).toFixed(2) : 0;
-          return { label: agg.label, percentage: perc };
-      });
+      const buildDataArray = (map) => {
+          return Array.from(map.keys()).sort().map(key => {
+              const agg = map.get(key);
+              const perc = agg.max > 0 ? ((agg.obtained / agg.max) * 100).toFixed(2) : 0;
+              return { label: agg.label, percentage: perc };
+          });
+      };
 
-      setGraphData(data);
+      setGraphData({
+          testWise: buildDataArray(testAggregates),
+          subjectWise: buildDataArray(subjectAggregates)
+      });
       setSelectedStudent(student);
       setIsGraphOpen(true);
   };
@@ -415,7 +429,7 @@ export default function ExamResults() {
       {selectedStudent && isGraphOpen && (
           <StudentGraphModal
              student={selectedStudent}
-             graphData={graphData}
+             datasets={graphData}
              isOpen={isGraphOpen}
              onClose={() => {
                  setIsGraphOpen(false);
