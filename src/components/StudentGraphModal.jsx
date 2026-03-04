@@ -100,10 +100,34 @@ export default function StudentGraphModal({ student, graphData, isOpen, onClose,
             </div>
 
             {graphData && graphData.length > 0 ? (
-                renderTrendLine()
+                <>
+                    {renderTrendLine()}
+                    <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="border p-4 rounded bg-green-50 border-green-200">
+                            <h4 className="font-bold text-green-800 border-b border-green-200 pb-2 mb-2">Strong Areas ( &gt;= 75% )</h4>
+                            <ul className="list-disc pl-5 text-sm text-green-900 space-y-1">
+                                {graphData.filter(d => parseFloat(d.percentage) >= 75).length > 0
+                                  ? graphData.filter(d => parseFloat(d.percentage) >= 75).map((d, i) => <li key={i}>{d.label} - {d.percentage}%</li>)
+                                  : <li className="text-gray-500 italic list-none">None yet</li>}
+                            </ul>
+                        </div>
+                        <div className="border p-4 rounded bg-red-50 border-red-200">
+                            <h4 className="font-bold text-red-800 border-b border-red-200 pb-2 mb-2">Weak Areas ( &lt; 40% )</h4>
+                            <ul className="list-disc pl-5 text-sm text-red-900 space-y-1">
+                                {graphData.filter(d => parseFloat(d.percentage) < 40).length > 0
+                                  ? graphData.filter(d => parseFloat(d.percentage) < 40).map((d, i) => <li key={i}>{d.label} - {d.percentage}%</li>)
+                                  : <li className="text-gray-500 italic list-none">None yet</li>}
+                            </ul>
+                        </div>
+                    </div>
+                </>
             ) : (
                 <p className="text-center text-gray-500 py-12">No data available for graph.</p>
             )}
+
+            <div className="mt-12 text-center text-xs text-gray-400 font-medium">
+                Developed by Nadim Anwar
+            </div>
         </div>
       </DialogContent>
     </Dialog>

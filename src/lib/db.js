@@ -57,6 +57,21 @@ export const dbService = {
     return blocks;
   },
 
+  getGlobalAppConfig: async () => {
+    const docRef = doc(db, 'settings', 'globalAppConfig');
+    const data = await safeGet(docRef);
+    return data || {
+        appDownloadLink: '',
+        globalNotice: ''
+    };
+  },
+
+  saveGlobalAppConfig: async (config) => {
+    const docRef = doc(db, 'settings', 'globalAppConfig');
+    await setDoc(docRef, config, { merge: true });
+    return config;
+  },
+
   // Sessions: stored as documents in 'sessions' collection
   getSessions: async () => {
     try {
