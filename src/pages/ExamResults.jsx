@@ -177,33 +177,6 @@ export default function ExamResults() {
   const openGraph = (student) => {
       if (!config?.subjectGroups) return;
 
-      // Kam Jayada Trend Graph Logic: Aggregate by Test (across subjects if same date/name)
-      const testAggregates = new Map(); // testId or date -> { obtained, max, label }
-
-      config.subjectGroups.forEach(group => {
-          group.tests.forEach(test => {
-              const key = test.date || test.name; // Use date as timeline key, fallback to name
-              const marks = parseInt(student.marks?.[test.id]) || 0;
-              const max = parseInt(test.maxMarks) || 0;
-
-              if (!testAggregates.has(key)) {
-                  testAggregates.set(key, { obtained: 0, max: 0, label: key });
-              }
-              const agg = testAggregates.get(key);
-              agg.obtained += marks;
-              agg.max += max;
-          });
-      });
-
-      // Convert to array and sort by date/label (very rough sort)
-      const sortedKeys = Array.from(testAggregates.keys()).sort();
-      const data = sortedKeys.map(key => {
-          const agg = testAggregates.get(key);
-          const perc = agg.max > 0 ? ((agg.obtained / agg.max) * 100).toFixed(2) : 0;
-          return { label: agg.label, percentage: perc };
-      });
-
-      setGraphData(data);
       setSelectedStudent(student);
       setIsGraphOpen(true);
   };
@@ -415,7 +388,9 @@ export default function ExamResults() {
       {selectedStudent && isGraphOpen && (
           <StudentGraphModal
              student={selectedStudent}
-             graphData={graphData}
+             viewType="exam"
+             examConfig={config}
+             examMarks={selectedStudent.marks}
              isOpen={isGraphOpen}
              onClose={() => {
                  setIsGraphOpen(false);

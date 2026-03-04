@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../lib/db';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
-import { ArrowLeft, Printer, FileText } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, BarChart } from 'lucide-react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import ClassMarksheetModal from '../components/ClassMarksheetModal';
+import StudentGraphModal from '../components/StudentGraphModal';
 
 export default function ClassResult() {
   const { session, classId } = useParams();
@@ -19,6 +20,8 @@ export default function ClassResult() {
 
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [isMarksheetOpen, setIsMarksheetOpen] = useState(false);
+  const [isGraphOpen, setIsGraphOpen] = useState(false);
+  const [graphData, setGraphData] = useState([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -135,6 +138,18 @@ export default function ClassResult() {
       setIsMarksheetOpen(true);
   };
 
+  const openGraph = (student) => {
+      const data = exams.map(examId => {
+          const totals = student.examTotals[examId];
+          if (!totals || totals.max === 0) return { label: examId, percentage: 0 };
+          const perc = ((totals.obtained / totals.max) * 100).toFixed(2);
+          return { label: examId, percentage: perc };
+      });
+      setGraphData(data);
+      setSelectedStudent(student);
+      setIsGraphOpen(true);
+  };
+
   if (loading) return <div className="p-8 text-center text-gray-500">Loading Aggregate Results...</div>;
 
   return (
@@ -221,9 +236,12 @@ export default function ClassResult() {
                         <TableCell className="text-center font-black text-blue-800 bg-blue-50 text-lg border-r">
                             {student.rank}
                         </TableCell>
-                        <TableCell className="text-center print:hidden">
+                        <TableCell className="text-center print:hidden flex flex-col sm:flex-row gap-1 justify-center items-center">
                              <Button variant="ghost" size="sm" onClick={() => openMarksheet(student)} className="text-blue-600 hover:text-blue-800 hover:bg-blue-50">
                                 <FileText className="h-4 w-4 mr-1" /> Marksheet
+                             </Button>
+                             <Button variant="ghost" size="sm" onClick={() => openGraph(student)} className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50">
+                                <BarChart className="h-4 w-4 mr-1" /> Graph
                              </Button>
                         </TableCell>
                         </TableRow>
@@ -243,6 +261,20 @@ export default function ClassResult() {
              onClose={() => setIsMarksheetOpen(false)}
              allStudents={aggregatedStudents}
              sessionDetails={sessionDetails}
+          />
+      )}
+
+      {selectedStudent && isGraphOpen && (
+          <StudentGraphModal
+             student={selectedStudent}
+             viewType="overall"
+             overallData={graphData}
+             isOpen={isGraphOpen}
+             onClose={() => {
+                 setIsGraphOpen(false);
+                 setSelectedStudent(null);
+             }}
+             title={`Overall Performance Trend`}
           />
       )}
     </div>

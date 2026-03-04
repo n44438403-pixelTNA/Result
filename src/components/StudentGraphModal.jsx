@@ -1,10 +1,87 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/Dialog';
 import { Button } from './ui/Button';
-import { Download, Printer, X } from 'lucide-react';
+import { Printer, X } from 'lucide-react';
 
-export default function StudentGraphModal({ student, graphData, isOpen, onClose, title }) {
+export default function StudentGraphModal({
+  student,
+  viewType = 'exam', // 'exam' or 'overall'
+  examConfig,
+  examMarks,
+  overallData, // [{ label: 'Exam1', percentage: 80 }]
+  isOpen,
+  onClose,
+  title
+}) {
   const printRef = useRef(null);
+
+  // mode: 'all', 'subject', 'test'
+  const [mode, setMode] = useState('all');
+
+  // Derive graphData based on viewType and mode
+  const graphData = useMemo(() => {
+    if (viewType === 'overall') {
+      return overallData || [];
+    }
+
+    if (!examConfig?.subjectGroups) return [];
+
+    if (mode === 'all') {
+      // All Tests across all subjects
+      const testAggregates = new Map();
+      examConfig.subjectGroups.forEach(group => {
+        group.tests.forEach(test => {
+          const key = test.date || test.name;
+          const marks = parseInt(examMarks?.[test.id]) || 0;
+          const max = parseInt(test.maxMarks) || 0;
+          if (!testAggregates.has(key)) {
+            testAggregates.set(key, { obtained: 0, max: 0, label: key });
+          }
+          const agg = testAggregates.get(key);
+          agg.obtained += marks;
+          agg.max += max;
+        });
+      });
+      const sortedKeys = Array.from(testAggregates.keys()).sort();
+      return sortedKeys.map(key => {
+        const agg = testAggregates.get(key);
+        const perc = agg.max > 0 ? ((agg.obtained / agg.max) * 100).toFixed(2) : 0;
+        return { label: agg.label, percentage: perc };
+      });
+    }
+
+    if (mode === 'subject') {
+      // Subject-wise totals
+      const subData = [];
+      examConfig.subjectGroups.forEach(group => {
+        let obtained = 0;
+        let max = 0;
+        group.tests.forEach(test => {
+          obtained += parseInt(examMarks?.[test.id]) || 0;
+          max += parseInt(test.maxMarks) || 0;
+        });
+        const perc = max > 0 ? ((obtained / max) * 100).toFixed(2) : 0;
+        subData.push({ label: group.subjectName, percentage: perc });
+      });
+      return subData;
+    }
+
+    if (mode === 'test') {
+      // Test-wise (Individual tests, distinguished if needed)
+      const testData = [];
+      examConfig.subjectGroups.forEach(group => {
+        group.tests.forEach(test => {
+          const marks = parseInt(examMarks?.[test.id]) || 0;
+          const max = parseInt(test.maxMarks) || 0;
+          const perc = max > 0 ? ((marks / max) * 100).toFixed(2) : 0;
+          testData.push({ label: `${group.subjectName}: ${test.name}`, percentage: perc });
+        });
+      });
+      return testData;
+    }
+
+    return [];
+  }, [viewType, examConfig, examMarks, overallData, mode]);
 
   if (!student || !isOpen) return null;
 
@@ -12,11 +89,16 @@ export default function StudentGraphModal({ student, graphData, isOpen, onClose,
   const renderTrendLine = () => {
     if (!graphData || graphData.length === 0) return null;
 
-    // SVG dimensions
-    const width = 800;
-    const height = 300;
+    const minPointSpacing = 80;
     const paddingX = 40;
     const paddingY = 40;
+    const height = 300;
+
+    // Calculate total needed width
+    const pointsCount = graphData.length;
+    const neededWidth = (pointsCount > 1 ? (pointsCount - 1) * minPointSpacing : minPointSpacing) + (paddingX * 2);
+    // Use at least 800px or the needed width
+    const width = Math.max(800, neededWidth);
 
     const usableWidth = width - (paddingX * 2);
     const usableHeight = height - (paddingY * 2);
@@ -34,7 +116,7 @@ export default function StudentGraphModal({ student, graphData, isOpen, onClose,
 
     return (
         <div className="w-full overflow-x-auto mt-6 border p-4 rounded bg-gray-50">
-            <svg viewBox={`0 0 ${width} ${height + 40}`} className="w-full min-w-[600px] h-auto font-sans">
+            <svg viewBox={`0 0 ${width} ${height + 60}`} style={{ width: `${width}px`, height: `${height+60}px` }} className="font-sans">
                {/* Grid lines */}
                {[0, 25, 50, 75, 100].map(val => (
                   <g key={`grid-${val}`}>
@@ -61,7 +143,7 @@ export default function StudentGraphModal({ student, graphData, isOpen, onClose,
                      <text x={p.x} y={p.y - 15} textAnchor="middle" fontSize="14" fontWeight="bold" fill="#1e40af">
                         {p.perc}%
                      </text>
-                     <text x={p.x} y={height + 20} textAnchor="middle" fontSize="12" fill="#4b5563" transform={`rotate(15, ${p.x}, ${height+20})`}>
+                     <text x={p.x} y={height + 20} textAnchor="end" fontSize="12" fill="#4b5563" transform={`rotate(-45, ${p.x}, ${height+20})`}>
                         {p.label}
                      </text>
                   </g>
@@ -83,7 +165,14 @@ export default function StudentGraphModal({ student, graphData, isOpen, onClose,
           </Button>
         </DialogHeader>
 
-        <div className="flex gap-2 mb-4 justify-end print:hidden">
+        <div className="flex gap-2 mb-4 justify-between items-center print:hidden">
+            {viewType === 'exam' ? (
+              <div className="flex gap-2">
+                <Button variant={mode === 'all' ? 'default' : 'outline'} size="sm" onClick={() => setMode('all')}>All</Button>
+                <Button variant={mode === 'subject' ? 'default' : 'outline'} size="sm" onClick={() => setMode('subject')}>Subject Wise</Button>
+                <Button variant={mode === 'test' ? 'default' : 'outline'} size="sm" onClick={() => setMode('test')}>Test Wise</Button>
+              </div>
+            ) : <div/>}
             <Button variant="outline" size="sm" onClick={() => window.print()}>
                <Printer className="h-4 w-4 mr-2" /> Print
             </Button>
@@ -96,7 +185,7 @@ export default function StudentGraphModal({ student, graphData, isOpen, onClose,
             </div>
 
             <div className="mb-4 text-gray-600 text-sm italic text-center">
-                This timeline graph shows the "kam jayada" (ups and downs) of the student's percentage across all tests by date.
+                This timeline graph shows the performance ups and downs of the student's percentage.
             </div>
 
             {graphData && graphData.length > 0 ? (
