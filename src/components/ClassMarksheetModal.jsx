@@ -82,23 +82,6 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
   const est = sessionDetails?.est || '';
   const mobile = sessionDetails?.mobile || '';
   const address = sessionDetails?.address || '';
-         if (!examData) return;
-
-         const { config, marks } = examData;
-         (config.subjectGroups || []).forEach(group => {
-             if (!subMap[group.subjectName]) {
-                 subMap[group.subjectName] = { obtained: 0, max: 0, name: group.subjectName };
-             }
-
-             (group.tests || []).forEach(test => {
-                 subMap[group.subjectName].obtained += parseInt(marks?.[test.id]) || 0;
-                 subMap[group.subjectName].max += parseInt(test.maxMarks) || 0;
-             });
-         });
-     });
-
-     return Object.values(subMap);
-  }, [student, exams]);
 
 
   const handleDownloadMHTML = () => {
