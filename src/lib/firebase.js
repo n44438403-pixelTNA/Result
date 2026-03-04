@@ -5,13 +5,13 @@ import { getAuth } from "firebase/auth";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyB8HAnSpjO7ljNPzYNamfopTPLblr0ErSU",
-  authDomain: "nsta-b09a4.firebaseapp.com",
-  databaseURL: "https://nsta-b09a4-default-rtdb.firebaseio.com",
-  projectId: "nsta-b09a4",
-  storageBucket: "nsta-b09a4.firebasestorage.app",
-  messagingSenderId: "874802599278",
-  appId: "1:874802599278:web:79406811f06f0352f31d7f"
+  apiKey: "AIzaSyC7N3IOa7GRETNRBo8P-QKVFzg2bLqoEco",
+  authDomain: "students-app-deae5.firebaseapp.com",
+  databaseURL: "https://students-app-deae5-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "students-app-deae5",
+  storageBucket: "students-app-deae5.firebasestorage.app",
+  messagingSenderId: "128267767708",
+  appId: "1:128267767708:web:08ed73b1563b2f3eb60259"
 };
 
 // Initialize Firebase

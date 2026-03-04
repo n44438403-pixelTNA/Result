@@ -23,6 +23,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      // Must authenticate with Firebase so we get a valid auth token to write to the database
+      // If nadimanwar794@gmail.com / NSTA is not created yet, you will need to create it in the Firebase Auth console
       await signInWithEmailAndPassword(auth, email, password);
       return true;
     } catch (error) {
