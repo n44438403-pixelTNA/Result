@@ -2,7 +2,7 @@ import React from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/Button';
-import { LogOut, Home } from 'lucide-react';
+import { LogOut, Home, ArrowLeft } from 'lucide-react';
 
 export default function MainLayout() {
   const { user, logout } = useAuth();
@@ -16,9 +16,14 @@ export default function MainLayout() {
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center py-6">
       <div className="w-full max-w-5xl px-4 flex justify-between items-center mb-8">
-        <Link to="/" className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-          <Home className="h-6 w-6" /> Result Portal
-        </Link>
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} title="Go Back">
+            <ArrowLeft className="h-5 w-5" />
+          </Button>
+          <Link to="/" className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+            <Home className="h-6 w-6" /> Result Portal
+          </Link>
+        </div>
         <div>
           {user ? (
             <Button variant="outline" onClick={handleLogout} className="text-red-600 hover:text-red-700 hover:bg-red-50">

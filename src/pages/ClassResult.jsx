@@ -14,6 +14,7 @@ export default function ClassResult() {
   const [exams, setExams] = useState([]);
   const [examConfigs, setExamConfigs] = useState({});
   const [aggregatedStudents, setAggregatedStudents] = useState([]);
+  const [sessionDetails, setSessionDetails] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const [selectedStudent, setSelectedStudent] = useState(null);
@@ -24,8 +25,12 @@ export default function ClassResult() {
       setLoading(true);
       try {
         // 1. Get all exams for this class
-        const examsList = await db.getExams(session, classId);
+        const [examsList, details] = await Promise.all([
+             db.getExams(session, classId),
+             db.getSessionDetails(session)
+        ]);
         setExams(examsList);
+        setSessionDetails(details);
 
         const configsMap = {};
         const studentsMap = {}; // { rollNo: { rollNo, name, examTotals: { 'Annual': { obtained, max } }, examDetails: { 'Annual': { marks: {}, config: {} } }, grandObtained, grandMax } }
@@ -239,6 +244,7 @@ export default function ClassResult() {
              isOpen={isMarksheetOpen}
              onClose={() => setIsMarksheetOpen(false)}
              allStudents={aggregatedStudents}
+             sessionDetails={sessionDetails}
           />
       )}
     </div>
