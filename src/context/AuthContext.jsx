@@ -29,20 +29,41 @@ export const AuthProvider = ({ children }) => {
       await signInWithEmailAndPassword(auth, email, password);
       return true;
     } catch (error) {
-      // Legacy auto-creation for the main admin if the account doesn't exist yet
-      if (email === 'nadimanwar794@gmail.com' && (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential')) {
-         try {
-             // Force password to be at least 6 chars for firebase if they type a short one
-             let padded = password;
-             while(padded.length < 6) padded += 'X';
+      // Hardcoded Admin Password Migration / Fallback
+      if (email === 'nadimanwar794@gmail.com') {
+         // If they typed the new requested password but it failed, try the old known passwords and migrate
+         if (password === 'ns841414' && error.code === 'auth/invalid-credential') {
+             try {
+                // Try old generic padded
+                await signInWithEmailAndPassword(auth, email, 'NSTAX');
+                await updatePassword(auth.currentUser, 'ns841414');
+                return true;
+             } catch (fallbackErr) {
+                 try {
+                     // Try old specific padded
+                     await signInWithEmailAndPassword(auth, email, 'NSTA123');
+                     await updatePassword(auth.currentUser, 'ns841414');
+                     return true;
+                 } catch (fallbackErr2) {
+                     // Proceed to auto-create logic
+                 }
+             }
+         }
 
-             await createUserWithEmailAndPassword(auth, email, padded);
-             return true;
-         } catch (createErr) {
-             console.error("Login/Create Error:", createErr);
-             return false;
+         // If the account doesn't exist, auto-create it using the password they typed
+         if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+             try {
+                 let padded = password;
+                 while(padded.length < 6) padded += 'X';
+                 await createUserWithEmailAndPassword(auth, email, padded);
+                 return true;
+             } catch (createErr) {
+                 console.error("Login/Create Error:", createErr);
+                 return false;
+             }
          }
       }
+
       console.error("Login Error:", error);
       return false;
     }
