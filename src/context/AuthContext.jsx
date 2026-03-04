@@ -51,14 +51,19 @@ export const AuthProvider = ({ children }) => {
              console.error("Login Error:", error2);
 
              // If both logins fail, attempt to auto-create the account using the legacy padded password
-             // to maintain consistency with the user's previously created database if any
-             try {
-                console.log("Account not found. Attempting to auto-create...");
-                await createUserWithEmailAndPassword(auth, email, legacyPadded);
-                return true;
-             } catch (createError) {
-                console.error("Auto-creation failed:", createError);
-                return false;
+             // to maintain consistency with the user's previously created database if any.
+             // SECURITY: Only allow auto-creation for the specific admin email to prevent an open registration vulnerability.
+             if (email === 'nadimanwar794@gmail.com') {
+                 try {
+                    console.log("Admin account not found. Attempting to auto-create...");
+                    await createUserWithEmailAndPassword(auth, email, legacyPadded);
+                    return true;
+                 } catch (createError) {
+                    console.error("Auto-creation failed:", createError);
+                    return false;
+                 }
+             } else {
+                 return false;
              }
         }
     }

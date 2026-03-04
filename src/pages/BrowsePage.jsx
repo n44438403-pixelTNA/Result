@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { Plus, ChevronRight, ChevronDown, Edit, FileText, UserCircle } from 'lucide-react';
+import { Plus, ChevronRight, ChevronDown, Edit, FileText, UserCircle, Layers } from 'lucide-react';
 
 export default function BrowsePage() {
   const { user, loading: authLoading } = useAuth();
@@ -246,6 +246,18 @@ export default function BrowsePage() {
                                         </Button>
                                     </div>
                                 ))}
+
+                                {exams[`${session}-${className}`]?.length > 0 && (
+                                    <div className="flex items-center justify-between p-3 border rounded bg-indigo-50 border-indigo-100 hover:bg-indigo-100 transition-colors mt-2">
+                                        <div className="flex items-center font-bold text-indigo-700">
+                                            <Layers className="mr-2 h-5 w-5" />
+                                            Overall Class Result
+                                        </div>
+                                        <Button size="sm" className="bg-indigo-600 hover:bg-indigo-700 text-white" onClick={() => navigate(`/class-result/${encodeURIComponent(session)}/${encodeURIComponent(className)}`)}>
+                                            <FileText className="mr-2 h-4 w-4" /> View All Exams Aggregate
+                                        </Button>
+                                    </div>
+                                )}
                             </div>
                           </div>
                         )}
