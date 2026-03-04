@@ -39,12 +39,19 @@ function generateMHTML(htmlContent, title) {
   return mhtml;
 }
 
-export default function MarksheetModal({ student, config, isOpen, onClose, allStudents }) {
+export default function MarksheetModal({ student, config, isOpen, onClose, allStudents, sessionDetails }) {
   const printRef = useRef(null);
   const [viewMode, setViewMode] = useState('test'); // 'test' or 'subject'
 
   // Early return if no data
   if (!student || !config || !isOpen) return null;
+
+  // Default values if no session details are set
+  const institute = sessionDetails?.instituteName || 'Institute / Coaching Name';
+  const director = sessionDetails?.director || '';
+  const est = sessionDetails?.est || '';
+  const mobile = sessionDetails?.mobile || '';
+  const address = sessionDetails?.address || '';
 
   const subjectGroups = config.subjectGroups || [];
 
@@ -168,10 +175,26 @@ export default function MarksheetModal({ student, config, isOpen, onClose, allSt
         </div>
 
         <div className="mt-2 p-6 bg-white border rounded shadow-sm print:border-none print:shadow-none print:p-0" ref={printRef}>
-          <div className="flex justify-between items-center mb-6 border-b pb-4">
+
+          {/* Marks Header (Coaching Info) */}
+          <div className="text-center mb-6 pb-4 border-b-2 border-gray-300">
+             <h1 className="text-3xl font-black text-blue-900 tracking-tight uppercase mb-1">{institute}</h1>
+             {(address || mobile) && (
+                 <p className="text-sm text-gray-700 font-medium">
+                     {address} {address && mobile && '|'} {mobile && `Mob: ${mobile}`}
+                 </p>
+             )}
+             {(director || est) && (
+                 <p className="text-xs text-gray-500 mt-1">
+                     {director && `Director: ${director}`} {director && est && '•'} {est && `Est: ${est}`}
+                 </p>
+             )}
+          </div>
+
+          <div className="flex justify-between items-end mb-6">
             <div>
-              <h2 className="text-2xl font-bold">Student Result</h2>
-              <p className="text-gray-600 mt-1">Name: {student.name} | Roll No: {student.rollNo}</p>
+              <h2 className="text-xl font-bold text-gray-800 uppercase tracking-wide">Report Card</h2>
+              <p className="text-lg text-gray-700 mt-1">Name: <span className="font-bold text-gray-900">{student.name}</span> <span className="text-gray-400 mx-2">|</span> Roll No: <span className="font-bold text-gray-900">{student.rollNo}</span></p>
             </div>
             <div className="flex gap-2 print:hidden">
               <Button variant="outline" size="sm" onClick={handlePrint}>

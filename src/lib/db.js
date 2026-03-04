@@ -65,6 +65,24 @@ export const dbService = {
     return sessionName;
   },
 
+  getSessionDetails: async (sessionName) => {
+    const docRef = doc(db, COLLECTION_SESSIONS, sessionName);
+    const data = await safeGet(docRef);
+    return data?.details || {
+      instituteName: 'Demo Coaching Center',
+      est: '2020',
+      director: 'John Doe',
+      mobile: '+91 0000000000',
+      address: '123 Main Street, City'
+    };
+  },
+
+  updateSessionDetails: async (sessionName, details) => {
+    const docRef = doc(db, COLLECTION_SESSIONS, sessionName);
+    await setDoc(docRef, { details }, { merge: true });
+    return details;
+  },
+
   // Classes: stored as subcollection 'classes' under session doc
   getClasses: async (session) => {
     try {

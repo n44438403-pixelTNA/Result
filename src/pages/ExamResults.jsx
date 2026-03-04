@@ -17,6 +17,7 @@ export default function ExamResults() {
 
   const [config, setConfig] = useState(null);
   const [students, setStudents] = useState([]);
+  const [sessionDetails, setSessionDetails] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showConfig, setShowConfig] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -27,10 +28,12 @@ export default function ExamResults() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      const [cfg, stu] = await Promise.all([
+      const [cfg, stu, details] = await Promise.all([
         db.getExamConfig(session, classId, examId),
-        db.getStudents(session, classId, examId)
+        db.getStudents(session, classId, examId),
+        db.getSessionDetails(session)
       ]);
+      setSessionDetails(details);
 
       let finalConfig = cfg;
       // Auto-migrate old formats for local state rendering immediately
@@ -301,6 +304,7 @@ export default function ExamResults() {
         student={selectedStudent}
         config={config}
         allStudents={students}
+        sessionDetails={sessionDetails}
       />
     </div>
   );
