@@ -3,12 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '../ui/Button';
 import { Input } from '../ui/Input';
 import { useAuth } from '../../context/AuthContext';
-import { Settings, X, Mail, Lock, UserPlus } from 'lucide-react';
+import { Settings, X, Mail, Lock, UserPlus, Globe, Save } from 'lucide-react';
+import { db } from '../../lib/db';
 
 export default function AdminManager({ isOpen, onClose }) {
   const { user, registerAdmin, updateAdminEmail, updateAdminPassword } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'addAdmin'
+  const [activeTab, setActiveTab] = useState('profile'); // 'profile', 'addAdmin', 'appSettings'
 
   const [newEmail, setNewEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -17,6 +18,19 @@ export default function AdminManager({ isOpen, onClose }) {
   const [newAdminEmail, setNewAdminEmail] = useState('');
   const [newAdminPassword, setNewAdminPassword] = useState('');
   const [addAdminMessage, setAddAdminMessage] = useState({ type: '', text: '' });
+
+  const [appLink, setAppLink] = useState('');
+  const [appNotice, setAppNotice] = useState('');
+  const [appMessage, setAppMessage] = useState({ type: '', text: '' });
+
+  React.useEffect(() => {
+     if (isOpen) {
+         db.getGlobalAppConfig().then(cfg => {
+             setAppLink(cfg.appDownloadLink || '');
+             setAppNotice(cfg.globalNotice || '');
+         });
+     }
+  }, [isOpen]);
 
   if (!user || !isOpen) return null;
 
@@ -43,6 +57,17 @@ export default function AdminManager({ isOpen, onClose }) {
       setNewPassword('');
     } else {
       setProfileMessage({ type: 'error', text: res.message || 'Failed to update password. You may need to log out and log back in.' });
+    }
+  };
+
+  const handleSaveAppConfig = async (e) => {
+    e.preventDefault();
+    setAppMessage({ type: '', text: '' });
+    try {
+        await db.saveGlobalAppConfig({ appDownloadLink: appLink, globalNotice: appNotice });
+        setAppMessage({ type: 'success', text: 'App settings saved successfully! Reload the page to see changes.' });
+    } catch (err) {
+        setAppMessage({ type: 'error', text: 'Failed to save settings.' });
     }
   };
 
@@ -92,7 +117,52 @@ export default function AdminManager({ isOpen, onClose }) {
             >
                 Add New Admin
             </button>
+            <button
+                className={`px-4 py-2 font-medium text-sm border-b-2 ${activeTab === 'appSettings' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+                onClick={() => setActiveTab('appSettings')}
+            >
+                App Settings
+            </button>
         </div>
+
+        {activeTab === 'appSettings' && (
+            <form onSubmit={handleSaveAppConfig} className="space-y-4">
+                <div className="bg-indigo-50 border border-indigo-100 p-4 rounded mb-4">
+                    <h3 className="flex items-center gap-2 font-semibold text-indigo-800 mb-2">
+                        <Globe className="h-5 w-5" /> Global App Settings
+                    </h3>
+                    <p className="text-sm text-indigo-600">
+                        Configure the App Download Link and the global floating notice that appears on all pages.
+                    </p>
+                </div>
+
+                {appMessage.text && (
+                    <div className={`p-3 rounded text-sm ${appMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+                        {appMessage.text}
+                    </div>
+                )}
+
+                <div>
+                    <label className="block text-sm font-medium mb-1">App Download Link (URL)</label>
+                    <Input
+                        type="url"
+                        placeholder="https://play.google.com/store/apps/details?id=com.example"
+                        value={appLink}
+                        onChange={e => setAppLink(e.target.value)}
+                    />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium mb-1">Global Notice Text</label>
+                    <textarea
+                        className="w-full h-24 p-2 border rounded text-sm"
+                        placeholder="Type a notice to be displayed to all users..."
+                        value={appNotice}
+                        onChange={e => setAppNotice(e.target.value)}
+                    />
+                </div>
+                <Button type="submit" className="w-full mt-4"><Save className="mr-2 h-4 w-4" /> Save App Settings</Button>
+            </form>
+        )}
 
         {activeTab === 'profile' && (
             <div className="space-y-6">

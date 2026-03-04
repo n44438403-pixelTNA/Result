@@ -114,6 +114,9 @@ export default function MarksheetModal({ student, config, isOpen, onClose, sessi
             </TableBody>
           </Table>
 
+          <div className="mt-12 text-center text-xs text-gray-400 font-medium">
+              Developed by Nadim Anwar
+          </div>
         </div>
       </DialogContent>
     </Dialog>

@@ -333,6 +333,10 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
                 </div>
             </div>
           )}
+
+          <div className="mt-12 text-center text-xs text-gray-400 font-medium">
+              Developed by Nadim Anwar
+          </div>
         </div>
       </DialogContent>
     </Dialog>

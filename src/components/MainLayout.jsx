@@ -1,14 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/Button';
-import { LogOut, Home, ArrowLeft, Settings } from 'lucide-react';
+import { LogOut, Home, ArrowLeft, Settings, DownloadCloud, Info } from 'lucide-react';
 import AdminManager from './admin/AdminManager';
+import { db } from '../lib/db';
 
 export default function MainLayout() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isAdminManagerOpen, setIsAdminManagerOpen] = useState(false);
+  const [appConfig, setAppConfig] = useState({ appDownloadLink: '', globalNotice: '' });
+
+  useEffect(() => {
+     db.getGlobalAppConfig().then(cfg => {
+         setAppConfig(cfg);
+     });
+  }, []);
 
   const handleLogout = async () => {
     await logout();
@@ -16,7 +24,7 @@ export default function MainLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-6">
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-6 relative pb-32">
       <div className="w-full max-w-5xl px-4 flex justify-between items-center mb-8">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate(-1)} title="Go Back">
@@ -42,8 +50,31 @@ export default function MainLayout() {
       <div className="w-full max-w-5xl px-4 flex-1">
         <Outlet />
       </div>
-      <footer className="mt-10 text-gray-400 text-sm pb-6">
-        &copy; {new Date().getFullYear()} Result Management System
+
+      {/* Global App Download & Notice Widget */}
+      {(appConfig.appDownloadLink || appConfig.globalNotice) && (
+          <div className="fixed bottom-4 right-4 max-w-sm w-full bg-white border shadow-xl rounded-lg overflow-hidden z-50 print:hidden flex flex-col">
+              {appConfig.appDownloadLink && (
+                  <a href={appConfig.appDownloadLink} target="_blank" rel="noreferrer" className="block bg-blue-600 hover:bg-blue-700 text-white font-bold text-center py-3 flex items-center justify-center gap-2 transition-colors">
+                      <DownloadCloud className="h-5 w-5" /> Download Our App
+                  </a>
+              )}
+              {appConfig.globalNotice && (
+                  <div className="p-3 bg-yellow-50 border-t border-yellow-100 flex flex-col max-h-40">
+                      <div className="flex items-center gap-1 text-yellow-800 font-bold text-sm mb-1">
+                          <Info className="h-4 w-4" /> Notice
+                      </div>
+                      <div className="text-sm text-yellow-900 overflow-y-auto pr-2 custom-scrollbar whitespace-pre-wrap">
+                          {appConfig.globalNotice}
+                      </div>
+                  </div>
+              )}
+          </div>
+      )}
+
+      <footer className="mt-10 text-gray-500 text-sm pb-6 text-center space-y-1">
+        <div>&copy; {new Date().getFullYear()} Result Management System</div>
+        <div className="font-medium text-gray-400">Developed by Nadim Anwar</div>
       </footer>
 
       {user && (
