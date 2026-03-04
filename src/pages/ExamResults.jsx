@@ -28,9 +28,10 @@ export default function ExamResults() {
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
-      const [cfg, stu, details] = await Promise.all([
+      const [cfg, currentStudents, classRegistry, details] = await Promise.all([
         db.getExamConfig(session, classId, examId),
         db.getStudents(session, classId, examId),
+        db.getClassStudentsRegistry(session, classId),
         db.getSessionDetails(session)
       ]);
       setSessionDetails(details);
@@ -58,8 +59,37 @@ export default function ExamResults() {
       }
 
       setConfig(finalConfig);
-      // Sort students by roll number
-      const sortedStudents = (stu || []).sort((a, b) => a.rollNo - b.rollNo);
+
+      // Merge class registry into current exam students
+      const studentMap = new Map();
+
+      // First, add all existing students for this specific exam
+      (currentStudents || []).forEach(s => {
+          if (s.rollNo) {
+             studentMap.set(s.rollNo, s);
+          }
+      });
+
+      // Then, inject any missing students from the class registry
+      (classRegistry || []).forEach(regStudent => {
+          if (regStudent.rollNo && !studentMap.has(regStudent.rollNo)) {
+             studentMap.set(regStudent.rollNo, {
+                 rollNo: regStudent.rollNo,
+                 name: regStudent.name,
+                 marks: {}
+             });
+          } else if (regStudent.rollNo && studentMap.has(regStudent.rollNo)) {
+             // Sync the name if it's missing in current exam but exists in registry
+             const existing = studentMap.get(regStudent.rollNo);
+             if (!existing.name && regStudent.name) {
+                 existing.name = regStudent.name;
+             }
+          }
+      });
+
+      // Convert map to array and sort students by roll number
+      const sortedStudents = Array.from(studentMap.values()).sort((a, b) => a.rollNo - b.rollNo);
+
       setStudents(sortedStudents);
       setLoading(false);
     };
