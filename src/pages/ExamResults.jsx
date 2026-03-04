@@ -5,10 +5,11 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent } from '../components/ui/Card';
-import { ArrowLeft, Plus, Save, Trash, UserCircle, FileText } from 'lucide-react';
+import { ArrowLeft, Plus, Save, Trash, UserCircle, FileText, BarChart, Search } from 'lucide-react';
 import ExamParams from '../components/admin/ExamParams';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import MarksheetModal from '../components/MarksheetModal';
+import StudentGraphModal from '../components/StudentGraphModal';
 
 export default function ExamResults() {
   const { user } = useAuth();
@@ -23,6 +24,11 @@ export default function ExamResults() {
   const [isSaving, setIsSaving] = useState(false);
 
   const [selectedStudent, setSelectedStudent] = useState(null);
+  const [isGraphOpen, setIsGraphOpen] = useState(false);
+  const [graphData, setGraphData] = useState([]);
+
+  const [searchRollNo, setSearchRollNo] = useState('');
+  const [searchError, setSearchError] = useState('');
 
   // Load data
   useEffect(() => {
@@ -168,13 +174,43 @@ export default function ExamResults() {
       return max > 0 ? ((obtained / max) * 100).toFixed(2) : 0;
   };
 
+  const openGraph = (student) => {
+      if (!config?.subjectGroups) return;
+      const data = [];
+      config.subjectGroups.forEach(group => {
+          let subObtained = 0;
+          let subMax = 0;
+          group.tests.forEach(test => {
+              subObtained += (parseInt(student.marks?.[test.id]) || 0);
+              subMax += (parseInt(test.maxMarks) || 0);
+          });
+          const perc = subMax > 0 ? ((subObtained / subMax) * 100).toFixed(2) : 0;
+          data.push({ label: group.subjectName, percentage: perc });
+      });
+      setGraphData(data);
+      setSelectedStudent(student);
+      setIsGraphOpen(true);
+  };
+
+  const handleSearch = () => {
+    setSearchError('');
+    if (!searchRollNo) return;
+    const roll = parseInt(searchRollNo);
+    const found = students.find(s => s.rollNo === roll);
+    if (found) {
+        setSelectedStudent(found);
+    } else {
+        setSearchError('Roll number not found');
+    }
+  };
+
   if (loading) return <div>Loading...</div>;
 
   const subjectGroups = config?.subjectGroups || [];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/browse')}>
             <ArrowLeft className="h-5 w-5" />
@@ -184,10 +220,24 @@ export default function ExamResults() {
              <p className="text-gray-500 text-sm">{session} / {classId}</p>
           </div>
         </div>
-        <div className="flex gap-2">
+        <div className="flex items-center gap-4 w-full md:w-auto">
+            {!user && (
+                <div className="flex items-center gap-2 flex-1 md:flex-none">
+                    <Input
+                        placeholder="Search Roll No..."
+                        value={searchRollNo}
+                        onChange={(e) => setSearchRollNo(e.target.value)}
+                        className="w-32 md:w-40"
+                    />
+                    <Button variant="default" onClick={handleSearch} className="px-3">
+                       <Search className="h-4 w-4" />
+                    </Button>
+                    {searchError && <span className="text-red-500 text-xs absolute mt-12">{searchError}</span>}
+                </div>
+            )}
             {!user ? (
-               <Button variant="outline" onClick={() => navigate('/login')} className="flex items-center gap-2">
-                  <UserCircle className="h-4 w-4" /> Admin Login / Edit
+               <Button variant="outline" onClick={() => navigate('/login')} className="flex items-center gap-2 shrink-0">
+                  <UserCircle className="h-4 w-4" /> Admin
                </Button>
             ) : (
                <>
@@ -260,14 +310,23 @@ export default function ExamResults() {
                           className="h-8 flex-1"
                           placeholder="Student Name"
                         />
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 shrink-0" onClick={() => setSelectedStudent(student)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 shrink-0" onClick={() => setSelectedStudent(student)} title="View Marksheet">
                            <FileText className="h-4 w-4" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500 shrink-0" onClick={() => openGraph(student)} title="View Performance Graph">
+                           <BarChart className="h-4 w-4" />
                         </Button>
                       </div>
                     ) : (
-                      <button onClick={() => setSelectedStudent(student)} className="font-medium text-blue-600 hover:underline flex items-center gap-2 w-full text-left">
-                         {student.name || 'Unnamed Student'} <FileText className="h-3 w-3" />
-                      </button>
+                      <div className="flex items-center gap-2 w-full">
+                        <span className="font-medium flex-1">{student.name || 'Unnamed Student'}</span>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-500 shrink-0" onClick={() => setSelectedStudent(student)} title="View Marksheet">
+                           <FileText className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 text-indigo-500 shrink-0" onClick={() => openGraph(student)} title="View Performance Graph">
+                           <BarChart className="h-3 w-3" />
+                        </Button>
+                      </div>
                     )}
                   </TableCell>
 
@@ -329,13 +388,26 @@ export default function ExamResults() {
       </Card>
 
       <MarksheetModal
-        isOpen={!!selectedStudent}
+        isOpen={!!selectedStudent && !isGraphOpen}
         onClose={() => setSelectedStudent(null)}
         student={selectedStudent}
         config={config}
         allStudents={students}
         sessionDetails={sessionDetails}
       />
+
+      {selectedStudent && isGraphOpen && (
+          <StudentGraphModal
+             student={selectedStudent}
+             graphData={graphData}
+             isOpen={isGraphOpen}
+             onClose={() => {
+                 setIsGraphOpen(false);
+                 setSelectedStudent(null);
+             }}
+             title={`Performance Overview: ${examId}`}
+          />
+      )}
     </div>
   );
 }
