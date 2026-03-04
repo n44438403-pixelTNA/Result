@@ -25,10 +25,8 @@ export default function ClassResult() {
       setLoading(true);
       try {
         // 1. Get all exams for this class
-        const [examsList, details] = await Promise.all([
-             db.getExams(session, classId),
-             db.getSessionDetails(session)
-        ]);
+        const examsList = await db.getExams(session, classId);
+        const details = await db.getSessionDetails(session);
         setExams(examsList);
         setSessionDetails(details);
 

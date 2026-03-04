@@ -66,15 +66,21 @@ export const dbService = {
   },
 
   getSessionDetails: async (sessionName) => {
-    const docRef = doc(db, COLLECTION_SESSIONS, sessionName);
-    const data = await safeGet(docRef);
-    return data?.details || {
-      instituteName: 'Demo Coaching Center',
-      est: '2020',
-      director: 'John Doe',
-      mobile: '+91 0000000000',
-      address: '123 Main Street, City'
-    };
+    if (!sessionName) return {};
+    try {
+      const docRef = doc(db, COLLECTION_SESSIONS, sessionName);
+      const data = await safeGet(docRef);
+      return data?.details || {
+        instituteName: 'Demo Coaching Center',
+        est: '2020',
+        director: 'John Doe',
+        mobile: '+91 0000000000',
+        address: '123 Main Street, City'
+      };
+    } catch (error) {
+       console.error("Error getting session details", error);
+       return {};
+    }
   },
 
   updateSessionDetails: async (sessionName, details) => {

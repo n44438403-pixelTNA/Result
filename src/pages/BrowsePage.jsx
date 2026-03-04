@@ -196,12 +196,12 @@ export default function BrowsePage() {
                 {expandedSession === session && (
                   <div className="p-4 border-t bg-white ml-4 border-l">
 
-                    {/* Session Details / Settings */}
-                    <div className="mb-6 p-4 bg-blue-50/50 rounded-md border border-blue-100">
-                        <div className="flex items-center gap-2 mb-3 text-blue-800 font-semibold">
-                            <Building className="h-4 w-4" /> Institute Details for {session}
-                        </div>
-                        {user ? (
+                    {/* Session Details / Settings - Only visible to admin */}
+                    {user && (
+                        <div className="mb-6 p-4 bg-blue-50/50 rounded-md border border-blue-100">
+                            <div className="flex items-center gap-2 mb-3 text-blue-800 font-semibold">
+                                <Building className="h-4 w-4" /> Institute Details for {session}
+                            </div>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <Input placeholder="Coaching/School Name" value={sessionDetails[session]?.instituteName || ''} onChange={(e) => handleDetailChange(session, 'instituteName', e.target.value)} />
                                 <Input placeholder="Est. (e.g., 2020)" value={sessionDetails[session]?.est || ''} onChange={(e) => handleDetailChange(session, 'est', e.target.value)} />
@@ -214,16 +214,8 @@ export default function BrowsePage() {
                                     </Button>
                                 </div>
                             </div>
-                        ) : (
-                            <div className="text-sm text-gray-700 grid grid-cols-1 md:grid-cols-2 gap-2">
-                                <div><span className="font-medium">Name:</span> {sessionDetails[session]?.instituteName || 'Not Set'}</div>
-                                <div><span className="font-medium">Est:</span> {sessionDetails[session]?.est || 'Not Set'}</div>
-                                <div><span className="font-medium">Director:</span> {sessionDetails[session]?.director || 'Not Set'}</div>
-                                <div><span className="font-medium">Mobile:</span> {sessionDetails[session]?.mobile || 'Not Set'}</div>
-                                <div className="md:col-span-2"><span className="font-medium">Address:</span> {sessionDetails[session]?.address || 'Not Set'}</div>
-                            </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
 
                     {/* Add Class Input */}
                     {user && showAddClass === session && (
