@@ -47,6 +47,32 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
   // viewMode: 'overall', 'subject', or examId (e.g. 'Annual')
   const [viewMode, setViewMode] = useState('overall');
 
+  // Compute aggregated subject-wise totals across ALL exams
+  const subjectAggregates = useMemo(() => {
+     const subMap = {}; // { 'Math': { obtained, max } }
+
+     if (!student || !exams) return [];
+
+     exams.forEach(examId => {
+         const examData = student.examDetails?.[examId];
+         if (!examData) return;
+
+         const { config, marks } = examData;
+         (config?.subjectGroups || []).forEach(group => {
+             if (!subMap[group.subjectName]) {
+                 subMap[group.subjectName] = { obtained: 0, max: 0, name: group.subjectName };
+             }
+
+             (group.tests || []).forEach(test => {
+                 subMap[group.subjectName].obtained += parseInt(marks?.[test.id]) || 0;
+                 subMap[group.subjectName].max += parseInt(test.maxMarks) || 0;
+             });
+         });
+     });
+
+     return Object.values(subMap);
+  }, [student, exams]);
+
   // Early return if no data
   if (!student || !isOpen) return null;
 
@@ -56,13 +82,6 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
   const est = sessionDetails?.est || '';
   const mobile = sessionDetails?.mobile || '';
   const address = sessionDetails?.address || '';
-
-  // Compute aggregated subject-wise totals across ALL exams
-  const subjectAggregates = useMemo(() => {
-     const subMap = {}; // { 'Math': { obtained, max } }
-
-     exams.forEach(examId => {
-         const examData = student.examDetails[examId];
          if (!examData) return;
 
          const { config, marks } = examData;
@@ -185,7 +204,7 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
 
   // Renderer for Individual Exam Details
   const renderIndividualExam = (examId) => {
-      const examData = student.examDetails[examId];
+      const examData = student.examDetails?.[examId];
       if (!examData) return <div className="text-center text-gray-500 py-8">No data found for {examId}</div>;
 
       const { config, marks } = examData;
