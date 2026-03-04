@@ -23,12 +23,8 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      // Hardcode admin credentials per requirements
-      if (email === 'nadimanwar794@gmail.com' && password === 'NSTA') {
-        setUser({ email, uid: 'admin_override' });
-        return true;
-      }
-      // Fallback
+      // Must authenticate with Firebase so we get a valid auth token to write to the database
+      // If nadimanwar794@gmail.com / NSTA is not created yet, you will need to create it in the Firebase Auth console
       await signInWithEmailAndPassword(auth, email, password);
       return true;
     } catch (error) {
@@ -39,18 +35,14 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      if (user?.uid === 'admin_override') {
-        setUser(null);
-      } else {
-        await signOut(auth);
-      }
+      await signOut(auth);
     } catch (error) {
       console.error("Logout Error:", error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading: false }}>
+    <AuthContext.Provider value={{ user, login, logout, loading }}>
       {children}
     </AuthContext.Provider>
   );
