@@ -8,46 +8,67 @@ export default function StudentGraphModal({ student, graphData, isOpen, onClose,
 
   if (!student || !isOpen) return null;
 
-  const handleDownloadMHTML = () => {
-    if (!printRef.current) return;
-    const htmlContent = printRef.current.innerHTML;
-    const mhtml = [
-      "MIME-Version: 1.0",
-      `Content-Type: multipart/related; boundary="----MultipartBoundary--"`,
-      "",
-      "------MultipartBoundary--",
-      "Content-Type: text/html; charset=UTF-8",
-      "Content-Transfer-Encoding: quoted-printable",
-      "",
-      "<!DOCTYPE html>",
-      "<html>",
-      "<head>",
-      `<title>${title} - ${student.name}</title>`,
-      "<style>",
-      "body { font-family: sans-serif; padding: 20px; }",
-      ".graph-container { display: flex; align-items: flex-end; justify-content: space-around; height: 300px; padding-top: 40px; padding-bottom: 20px; border-bottom: 2px solid #ddd; }",
-      ".bar-wrapper { display: flex; flex-direction: column; align-items: center; width: 60px; position: relative; }",
-      ".bar { width: 100%; background-color: #3b82f6; border-radius: 4px 4px 0 0; min-height: 4px; }",
-      ".label { margin-top: 10px; font-size: 12px; color: #4b5563; transform: rotate(45deg); transform-origin: left; white-space: nowrap; }",
-      ".value { position: absolute; top: -24px; font-size: 12px; font-weight: bold; color: #1e40af; }",
-      ".header { text-align: center; margin-bottom: 40px; }",
-      "</style>",
-      "</head>",
-      "<body>",
-      htmlContent,
-      "</body>",
-      "</html>",
-      "",
-      "------MultipartBoundary----"
-    ].join("\r\n");
+  // Render timeline SVG graph (Trend line)
+  const renderTrendLine = () => {
+    if (!graphData || graphData.length === 0) return null;
 
-    const blob = new Blob([mhtml], { type: 'message/rfc822' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${student.name}_Graph.mhtml`;
-    a.click();
-    URL.revokeObjectURL(url);
+    // SVG dimensions
+    const width = 800;
+    const height = 300;
+    const paddingX = 40;
+    const paddingY = 40;
+
+    const usableWidth = width - (paddingX * 2);
+    const usableHeight = height - (paddingY * 2);
+
+    const stepX = graphData.length > 1 ? usableWidth / (graphData.length - 1) : usableWidth / 2;
+
+    // Create points
+    const points = graphData.map((data, index) => {
+        const x = paddingX + (index * stepX);
+        const y = paddingY + usableHeight - ((data.percentage / 100) * usableHeight);
+        return { x, y, perc: data.percentage, label: data.label };
+    });
+
+    const pathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
+
+    return (
+        <div className="w-full overflow-x-auto mt-6 border p-4 rounded bg-gray-50">
+            <svg viewBox={`0 0 ${width} ${height + 40}`} className="w-full min-w-[600px] h-auto font-sans">
+               {/* Grid lines */}
+               {[0, 25, 50, 75, 100].map(val => (
+                  <g key={`grid-${val}`}>
+                     <text x="5" y={paddingY + usableHeight - ((val/100)*usableHeight) + 4} fontSize="12" fill="#888">{val}%</text>
+                     <line
+                        x1={paddingX - 10}
+                        y1={paddingY + usableHeight - ((val/100)*usableHeight)}
+                        x2={width - 10}
+                        y2={paddingY + usableHeight - ((val/100)*usableHeight)}
+                        stroke="#ddd"
+                        strokeWidth="1"
+                        strokeDasharray="4 4"
+                     />
+                  </g>
+               ))}
+
+               {/* The Trend Line */}
+               <path d={pathData} fill="none" stroke="#3b82f6" strokeWidth="3" />
+
+               {/* Data Points & Labels */}
+               {points.map((p, i) => (
+                  <g key={`point-${i}`}>
+                     <circle cx={p.x} cy={p.y} r="6" fill="#1e40af" />
+                     <text x={p.x} y={p.y - 15} textAnchor="middle" fontSize="14" fontWeight="bold" fill="#1e40af">
+                        {p.perc}%
+                     </text>
+                     <text x={p.x} y={height + 20} textAnchor="middle" fontSize="12" fill="#4b5563" transform={`rotate(15, ${p.x}, ${height+20})`}>
+                        {p.label}
+                     </text>
+                  </g>
+               ))}
+            </svg>
+        </div>
+    );
   };
 
   return (
@@ -55,7 +76,7 @@ export default function StudentGraphModal({ student, graphData, isOpen, onClose,
       <DialogContent className="max-w-4xl">
         <DialogHeader className="flex flex-row justify-between items-start border-b pb-4">
           <div>
-            <DialogTitle className="text-xl">Performance Graph: {student.name}</DialogTitle>
+            <DialogTitle className="text-xl">Performance Trend: {student.name}</DialogTitle>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose}>
              <X className="h-5 w-5" />
@@ -66,27 +87,20 @@ export default function StudentGraphModal({ student, graphData, isOpen, onClose,
             <Button variant="outline" size="sm" onClick={() => window.print()}>
                <Printer className="h-4 w-4 mr-2" /> Print
             </Button>
-            <Button variant="outline" size="sm" onClick={handleDownloadMHTML}>
-               <Download className="h-4 w-4 mr-2" /> Download MHTML
-            </Button>
         </div>
 
-        <div className="p-6 bg-white border rounded" ref={printRef}>
-            <div className="header">
-               <h2 className="text-2xl font-bold">{title}</h2>
-               <p className="text-gray-600">Student: {student.name} | Roll No: {student.rollNo}</p>
+        <div className="p-6 bg-white border rounded print:border-none print:shadow-none" ref={printRef}>
+            <div className="text-center mb-8">
+               <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+               <p className="text-gray-600">Student: <span className="font-semibold text-gray-900">{student.name}</span> | Roll No: {student.rollNo}</p>
+            </div>
+
+            <div className="mb-4 text-gray-600 text-sm italic text-center">
+                This timeline graph shows the "kam jayada" (ups and downs) of the student's percentage across all tests by date.
             </div>
 
             {graphData && graphData.length > 0 ? (
-                <div className="graph-container">
-                    {graphData.map((data, idx) => (
-                        <div key={idx} className="bar-wrapper">
-                            <div className="value">{data.percentage}%</div>
-                            <div className="bar" style={{ height: `${Math.max(data.percentage, 1)}%` }}></div>
-                            <div className="label">{data.label}</div>
-                        </div>
-                    ))}
-                </div>
+                renderTrendLine()
             ) : (
                 <p className="text-center text-gray-500 py-12">No data available for graph.</p>
             )}
