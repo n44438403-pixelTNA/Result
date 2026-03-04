@@ -23,6 +23,12 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
+      // Hardcode admin credentials per requirements
+      if (email === 'nadimanwar794@gmail.com' && password === 'NSTA') {
+        setUser({ email, uid: 'admin_override' });
+        return true;
+      }
+      // Fallback
       await signInWithEmailAndPassword(auth, email, password);
       return true;
     } catch (error) {
@@ -33,14 +39,18 @@ export const AuthProvider = ({ children }) => {
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      if (user?.uid === 'admin_override') {
+        setUser(null);
+      } else {
+        await signOut(auth);
+      }
     } catch (error) {
       console.error("Logout Error:", error);
     }
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout, loading }}>
+    <AuthContext.Provider value={{ user, login, logout, loading: false }}>
       {children}
     </AuthContext.Provider>
   );

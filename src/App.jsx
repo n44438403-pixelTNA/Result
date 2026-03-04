@@ -1,41 +1,22 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import LoginPage from './pages/admin/LoginPage';
-import AdminLayout from './components/AdminLayout';
-import RequireAuth from './components/RequireAuth';
-import Dashboard from './pages/admin/Dashboard';
-import ExamEditor from './pages/admin/ExamEditor';
-import Settings from './pages/admin/Settings';
-import ThemeDesigner from './pages/admin/ThemeDesigner';
-import PublicLayout from './components/PublicLayout';
-import SearchPage from './pages/public/SearchPage';
-import ResultPage from './pages/public/ResultPage';
+import MainLayout from './components/MainLayout';
+import HomePage from './pages/HomePage';
+import LoginPage from './pages/LoginPage';
+import BrowsePage from './pages/BrowsePage';
+import ExamResults from './pages/ExamResults';
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Public Routes */}
-          <Route element={<PublicLayout />}>
-             <Route path="/" element={<SearchPage />} />
-             <Route path="/result/:session/:classId/:examId/:rollNo" element={<ResultPage />} />
-          </Route>
-          
-          <Route path="/admin/login" element={<LoginPage />} />
-          
-          {/* Protected Admin Routes */}
-          <Route path="/admin" element={
-            <RequireAuth>
-              <AdminLayout />
-            </RequireAuth>
-          }>
-            <Route index element={<Navigate to="/admin/dashboard" replace />} />
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="settings" element={<Settings />} />
-            <Route path="design" element={<ThemeDesigner />} />
-            <Route path="exam/:session/:classId/:examId" element={<ExamEditor />} />
+          <Route element={<MainLayout />}>
+             <Route path="/" element={<HomePage />} />
+             <Route path="/login" element={<LoginPage />} />
+             <Route path="/browse" element={<BrowsePage />} />
+             <Route path="/exam/:session/:classId/:examId" element={<ExamResults />} />
           </Route>
         </Routes>
       </BrowserRouter>
