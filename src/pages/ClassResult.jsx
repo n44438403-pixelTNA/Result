@@ -3,9 +3,10 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../lib/db';
 import { Button } from '../components/ui/Button';
 import { Card, CardContent } from '../components/ui/Card';
-import { ArrowLeft, Printer, FileText } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, BarChart } from 'lucide-react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import ClassMarksheetModal from '../components/ClassMarksheetModal';
+import StudentGraphModal from '../components/StudentGraphModal';
 
 export default function ClassResult() {
   const { session, classId } = useParams();
@@ -19,6 +20,8 @@ export default function ClassResult() {
 
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [isMarksheetOpen, setIsMarksheetOpen] = useState(false);
+  const [isGraphOpen, setIsGraphOpen] = useState(false);
+  const [graphData, setGraphData] = useState({});
 
   useEffect(() => {
     const loadData = async () => {
@@ -137,6 +140,24 @@ export default function ClassResult() {
       setIsMarksheetOpen(true);
   };
 
+  const openGraph = (student) => {
+      // Build a timeline for all exams overall
+      const timelineData = [];
+      exams.forEach(exam => {
+          const result = student.examTotals[exam];
+          if (result && result.max > 0) {
+              const perc = ((result.obtained / result.max) * 100).toFixed(2);
+              timelineData.push({ label: exam, percentage: perc });
+          }
+      });
+
+      setGraphData({
+          overallTimeline: timelineData
+      });
+      setSelectedStudent(student);
+      setIsGraphOpen(true);
+  };
+
   if (loading) return <div className="p-8 text-center text-gray-500">Loading Aggregate Results...</div>;
 
   return (
@@ -224,9 +245,14 @@ export default function ClassResult() {
                             {student.rank}
                         </TableCell>
                         <TableCell className="text-center print:hidden">
-                             <Button variant="ghost" size="sm" onClick={() => openMarksheet(student)} className="text-blue-600 hover:text-blue-800 hover:bg-blue-50">
-                                <FileText className="h-4 w-4 mr-1" /> Marksheet
-                             </Button>
+                             <div className="flex items-center justify-center gap-2">
+                                 <Button variant="ghost" size="sm" onClick={() => openMarksheet(student)} className="text-blue-600 hover:text-blue-800 hover:bg-blue-50" title="Marksheet">
+                                    <FileText className="h-4 w-4" />
+                                 </Button>
+                                 <Button variant="ghost" size="sm" onClick={() => openGraph(student)} className="text-indigo-600 hover:text-indigo-800 hover:bg-indigo-50" title="Performance Graph">
+                                    <BarChart className="h-4 w-4" />
+                                 </Button>
+                             </div>
                         </TableCell>
                         </TableRow>
                     );
@@ -237,14 +263,30 @@ export default function ClassResult() {
         </Card>
       )}
 
-      {selectedStudent && (
+      {selectedStudent && isMarksheetOpen && (
           <ClassMarksheetModal
              student={selectedStudent}
              exams={exams}
              isOpen={isMarksheetOpen}
-             onClose={() => setIsMarksheetOpen(false)}
+             onClose={() => {
+                 setIsMarksheetOpen(false);
+                 setSelectedStudent(null);
+             }}
              allStudents={aggregatedStudents}
              sessionDetails={sessionDetails}
+          />
+      )}
+
+      {selectedStudent && isGraphOpen && (
+          <StudentGraphModal
+             student={selectedStudent}
+             datasets={graphData}
+             isOpen={isGraphOpen}
+             onClose={() => {
+                 setIsGraphOpen(false);
+                 setSelectedStudent(null);
+             }}
+             title={`Overall Performance Trend (All Exams)`}
           />
       )}
     </div>
