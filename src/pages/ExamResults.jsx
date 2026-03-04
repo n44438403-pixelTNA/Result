@@ -34,17 +34,24 @@ export default function ExamResults() {
 
       let finalConfig = cfg;
       // Auto-migrate old formats for local state rendering immediately
-      if (!cfg?.tests && cfg?.subjects) {
-          finalConfig = {
-              tests: cfg.subjects.map((sub, i) => ({
-                 id: `test_mig_${i}`,
-                 name: sub,
-                 maxMarks: cfg.maxMarks || 100,
-                 date: ''
-              }))
-          };
+      if (cfg && !cfg.subjectGroups) {
+          if (cfg.tests && Array.isArray(cfg.tests)) {
+              finalConfig = { subjectGroups: [{ subjectName: 'General', tests: cfg.tests }] };
+          } else if (cfg.subjects && Array.isArray(cfg.subjects)) {
+              finalConfig = {
+                  subjectGroups: cfg.subjects.map((sub, i) => ({
+                     subjectName: sub,
+                     tests: [{
+                        id: `test_mig_${i}`,
+                        name: `${sub} 1`,
+                        maxMarks: cfg.maxMarks || 100,
+                        date: ''
+                     }]
+                  }))
+              };
+          }
       } else if (!cfg) {
-          finalConfig = { tests: [] };
+          finalConfig = { subjectGroups: [] };
       }
 
       setConfig(finalConfig);
@@ -101,13 +108,25 @@ export default function ExamResults() {
   };
 
   const calculateTotalObtained = (student) => {
-    if (!student.marks || !config?.tests) return 0;
-    return config.tests.reduce((sum, test) => sum + (parseInt(student.marks[test.id]) || 0), 0);
+    if (!student.marks || !config?.subjectGroups) return 0;
+    let sum = 0;
+    config.subjectGroups.forEach(group => {
+        group.tests.forEach(test => {
+            sum += (parseInt(student.marks[test.id]) || 0);
+        });
+    });
+    return sum;
   };
 
   const calculateTotalMax = () => {
-      if (!config?.tests) return 0;
-      return config.tests.reduce((sum, test) => sum + (parseInt(test.maxMarks) || 0), 0);
+      if (!config?.subjectGroups) return 0;
+      let sum = 0;
+      config.subjectGroups.forEach(group => {
+          group.tests.forEach(test => {
+              sum += (parseInt(test.maxMarks) || 0);
+          });
+      });
+      return sum;
   };
 
   const calculatePercentage = (student) => {
@@ -118,7 +137,7 @@ export default function ExamResults() {
 
   if (loading) return <div>Loading...</div>;
 
-  const tests = config?.tests || [];
+  const subjectGroups = config?.subjectGroups || [];
 
   return (
     <div className="space-y-6">
@@ -159,18 +178,29 @@ export default function ExamResults() {
           <Table className="min-w-max">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-20 sticky left-0 bg-white z-10 shadow-sm border-r">Roll No</TableHead>
-                <TableHead className="w-64 sticky left-20 bg-white z-10 shadow-sm border-r">Name</TableHead>
-                {tests.map(test => (
-                  <TableHead key={test.id} className="min-w-[150px] text-center border-r">
-                    <div className="font-bold">{test.name}</div>
-                    <div className="text-xs text-gray-500">{test.date || 'No date'}</div>
-                    <div className="text-xs text-blue-600">Full: {test.maxMarks}</div>
-                  </TableHead>
+                <TableHead rowSpan={2} className="w-20 sticky left-0 bg-white z-20 shadow-sm border-r align-bottom pb-4">Roll No</TableHead>
+                <TableHead rowSpan={2} className="w-64 sticky left-20 bg-white z-20 shadow-sm border-r align-bottom pb-4">Name</TableHead>
+                {subjectGroups.map((group, i) => (
+                   group.tests.length > 0 && (
+                     <TableHead key={i} colSpan={group.tests.length} className="text-center border-r border-b font-bold bg-gray-50">
+                       {group.subjectName}
+                     </TableHead>
+                   )
                 ))}
-                <TableHead className="w-24 text-center font-bold border-l bg-gray-50">Total</TableHead>
-                <TableHead className="w-24 text-center font-bold bg-gray-50 border-r">%</TableHead>
-                {user && <TableHead className="w-16"></TableHead>}
+                <TableHead rowSpan={2} className="w-24 text-center font-bold border-l bg-gray-50 align-bottom pb-4">Total</TableHead>
+                <TableHead rowSpan={2} className="w-24 text-center font-bold bg-gray-50 border-r align-bottom pb-4">%</TableHead>
+                {user && <TableHead rowSpan={2} className="w-16 bg-white z-10"></TableHead>}
+              </TableRow>
+              <TableRow>
+                {subjectGroups.map(group => (
+                  group.tests.map(test => (
+                    <TableHead key={test.id} className="min-w-[150px] text-center border-r bg-white top-10">
+                      <div className="font-semibold text-gray-700">{test.name}</div>
+                      <div className="text-xs text-gray-500">{test.date || 'No date'}</div>
+                      <div className="text-xs text-blue-600">Full: {test.maxMarks}</div>
+                    </TableHead>
+                  ))
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -208,30 +238,32 @@ export default function ExamResults() {
                     )}
                   </TableCell>
 
-                  {tests.map(test => {
-                    const marks = student.marks?.[test.id] ?? '';
-                    const max = parseInt(test.maxMarks) || 0;
-                    const perc = (marks !== '' && max > 0) ? ((parseInt(marks) / max) * 100).toFixed(0) : '-';
+                  {subjectGroups.map(group => (
+                    group.tests.map(test => {
+                      const marks = student.marks?.[test.id] ?? '';
+                      const max = parseInt(test.maxMarks) || 0;
+                      const perc = (marks !== '' && max > 0) ? ((parseInt(marks) / max) * 100).toFixed(0) : '-';
 
-                    return (
-                      <TableCell key={test.id} className="text-center p-2 border-r">
-                        <div className="flex flex-col items-center gap-1">
-                            {user ? (
-                            <Input
-                                type="number"
-                                value={marks}
-                                onChange={(e) => handleMarkChange(index, test.id, e.target.value)}
-                                className="h-8 w-20 text-center"
-                                placeholder="-"
-                            />
-                            ) : (
-                            <span className="text-base">{marks !== '' ? marks : '-'}</span>
-                            )}
-                            <span className="text-[10px] text-gray-500 font-medium bg-gray-100 px-1.5 rounded">{perc}%</span>
-                        </div>
-                      </TableCell>
-                    );
-                  })}
+                      return (
+                        <TableCell key={test.id} className="text-center p-2 border-r">
+                          <div className="flex flex-col items-center gap-1">
+                              {user ? (
+                              <Input
+                                  type="number"
+                                  value={marks}
+                                  onChange={(e) => handleMarkChange(index, test.id, e.target.value)}
+                                  className="h-8 w-20 text-center"
+                                  placeholder="-"
+                              />
+                              ) : (
+                              <span className="text-base">{marks !== '' ? marks : '-'}</span>
+                              )}
+                              <span className="text-[10px] text-gray-500 font-medium bg-gray-100 px-1.5 rounded">{perc}%</span>
+                          </div>
+                        </TableCell>
+                      );
+                    })
+                  ))}
 
                   <TableCell className="text-center font-bold text-blue-600 border-l bg-gray-50">
                     {calculateTotalObtained(student)}

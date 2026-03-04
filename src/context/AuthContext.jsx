@@ -24,30 +24,14 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     try {
-      // Firebase requires passwords to be at least 6 characters.
-      // Since the requested password is 'NSTA' (4 chars), we pad it behind the scenes.
-      const firebasePassword = (email === 'nadimanwar794@gmail.com' && password === 'NSTA')
-        ? 'NSTA123'
-        : password;
-
-      // Must authenticate with Firebase so we get a valid auth token to write to the database
-      await signInWithEmailAndPassword(auth, email, firebasePassword);
+      // Authenticate with Firebase using provided credentials.
+      // Note: If you requested 'NSTA', you must create the account in Firebase Console
+      // using a 6+ character password (e.g. NSTA123) and use that to log in,
+      // because Firebase strictly rejects 4-character passwords.
+      await signInWithEmailAndPassword(auth, email, password);
       return true;
     } catch (error) {
       console.error("Login Error:", error);
-
-      // Auto-create the admin account if it doesn't exist yet
-      if (email === 'nadimanwar794@gmail.com' && password === 'NSTA') {
-        try {
-          console.log("Attempting to auto-create admin account...");
-          await createUserWithEmailAndPassword(auth, email, 'NSTA123');
-          return true;
-        } catch (createError) {
-          console.error("Auto-creation failed:", createError);
-          return false;
-        }
-      }
-
       return false;
     }
   };
