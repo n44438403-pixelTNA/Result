@@ -37,10 +37,20 @@ export default function MarksheetModal({ student, config, isOpen, onClose, sessi
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto print:max-h-none print:overflow-visible print:border-none print:shadow-none print:p-0">
+      <DialogContent className="max-w-max max-h-[90vh] overflow-y-auto print:max-h-none print:overflow-visible print:border-none print:shadow-none print:p-0 bg-gray-100 print:bg-white">
+
+        <style>
+          {`
+            @media print {
+              @page { size: A4 portrait; margin: 15mm; }
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          `}
+        </style>
+
         <DialogHeader className="flex flex-row justify-between items-start border-b pb-4 print:hidden">
           <div>
-            <DialogTitle className="text-xl">Marksheet 2.0</DialogTitle>
+            <DialogTitle className="text-xl">Marksheet Print Preview (A4)</DialogTitle>
             <DialogDescription>Student Name: {student.name}</DialogDescription>
           </div>
           <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 print:hidden">
@@ -48,7 +58,9 @@ export default function MarksheetModal({ student, config, isOpen, onClose, sessi
           </Button>
         </DialogHeader>
 
-        <div className="mt-2 p-8 bg-white border rounded shadow-sm print:border-2 print:border-gray-800 print:shadow-none print:p-8 relative" ref={printRef}>
+        <div className="mx-auto mt-4 p-10 bg-white shadow-xl relative print:shadow-none print:border-2 print:border-gray-800 print:m-0 print:p-8"
+             style={{ width: '210mm', minHeight: '297mm', boxSizing: 'border-box' }}
+             ref={printRef}>
 
           {/* Subtle Watermark for Print */}
           <div className="hidden print:flex absolute inset-0 items-center justify-center pointer-events-none opacity-5">

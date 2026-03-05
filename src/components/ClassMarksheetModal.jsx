@@ -249,19 +249,29 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto print:max-h-none print:overflow-visible print:border-none print:shadow-none print:p-0">
-        <DialogHeader className="flex flex-row justify-between items-start border-b pb-4">
+      <DialogContent className="max-w-max max-h-[90vh] overflow-y-auto print:max-h-none print:overflow-visible print:border-none print:shadow-none print:p-0 bg-gray-100 print:bg-white">
+
+        <style>
+          {`
+            @media print {
+              @page { size: A4 portrait; margin: 15mm; }
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          `}
+        </style>
+
+        <DialogHeader className="flex flex-row justify-between items-start border-b pb-4 print:hidden">
           <div>
-            <DialogTitle className="text-xl">Composite Marksheet: {student.name}</DialogTitle>
-            <DialogDescription>Roll No: {student.rollNo} | Rank: {student.rank}</DialogDescription>
+            <DialogTitle className="text-xl">Composite Marksheet Preview</DialogTitle>
+            <DialogDescription>Student Name: {student.name}</DialogDescription>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-gray-500 hover:text-gray-900">
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 print:hidden text-gray-500 hover:text-gray-900">
              <X className="h-5 w-5" />
           </Button>
         </DialogHeader>
 
         {/* View Controls */}
-        <div className="flex flex-wrap gap-2 mb-4 print:hidden bg-gray-50 p-3 rounded border">
+        <div className="flex flex-wrap gap-2 mb-4 print:hidden bg-white p-3 rounded shadow-sm border max-w-[210mm] mx-auto">
            <div className="flex items-center text-sm font-semibold text-gray-600 mr-2">
                <LayoutList className="h-4 w-4 mr-1"/> Views:
            </div>
@@ -281,7 +291,9 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
            ))}
         </div>
 
-        <div className="mt-2 p-8 bg-white border rounded shadow-sm print:border-2 print:border-gray-800 print:shadow-none print:p-8 relative" ref={printRef}>
+        <div className="mx-auto mt-4 p-10 bg-white shadow-xl relative print:shadow-none print:border-2 print:border-gray-800 print:m-0 print:p-8"
+             style={{ width: '210mm', minHeight: '297mm', boxSizing: 'border-box' }}
+             ref={printRef}>
 
           {/* Subtle Watermark for Print */}
           <div className="hidden print:flex absolute inset-0 items-center justify-center pointer-events-none opacity-5">
