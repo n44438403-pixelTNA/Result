@@ -291,26 +291,28 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
            ))}
         </div>
 
-        <div className="mx-auto mt-4 p-10 bg-white shadow-xl relative print:shadow-none print:border-2 print:border-gray-800 print:m-0 print:p-8"
+        <div className="mx-auto mt-4 p-10 bg-white shadow-xl relative print:shadow-none print:border-[3px] print:border-gray-900 print:m-0 print:p-8 overflow-hidden"
              style={{ width: '210mm', minHeight: '297mm', boxSizing: 'border-box' }}
              ref={printRef}>
 
           {/* Subtle Watermark for Print */}
-          <div className="hidden print:flex absolute inset-0 items-center justify-center pointer-events-none opacity-5">
-              <span className="text-8xl font-black uppercase tracking-widest rotate-[-45deg]">{institute}</span>
+          <div className="hidden print:flex absolute inset-0 items-center justify-center pointer-events-none opacity-10">
+              <div className="text-6xl font-black uppercase tracking-[0.3em] text-gray-400 rotate-[-45deg] text-center leading-relaxed max-w-[200mm] break-words">
+                  {institute}
+              </div>
           </div>
 
-          {/* Marks Header (Coaching Info) */}
-          <div className="text-center mb-6 pb-4 border-b-2 border-gray-800 relative z-10">
-             <h1 className="text-3xl font-black text-blue-900 tracking-tight uppercase mb-1">{institute}</h1>
+          {/* Professional Header Info */}
+          <div className="text-center mb-6 pb-4 border-b-[3px] border-double border-gray-800 relative z-10">
+             <h1 className="text-4xl font-black text-[#1e3a8a] tracking-tight uppercase mb-2 font-serif drop-shadow-sm">{institute}</h1>
              {(address || mobile) && (
-                 <p className="text-sm text-gray-700 font-medium">
-                     {address} {address && mobile && '|'} {mobile && `Mob: ${mobile}`}
+                 <p className="text-sm text-gray-700 font-semibold tracking-wide">
+                     {address} {address && mobile && ' | '} {mobile && `Mob: ${mobile}`}
                  </p>
              )}
              {(director || est) && (
-                 <p className="text-xs text-gray-500 mt-1">
-                     {director && `Director: ${director}`} {director && est && '•'} {est && `Est: ${est}`}
+                 <p className="text-xs text-gray-500 mt-1 uppercase tracking-widest font-medium">
+                     {director && `Director: ${director}`} {director && est && ' • '} {est && `Est: ${est}`}
                  </p>
              )}
           </div>
