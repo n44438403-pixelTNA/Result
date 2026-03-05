@@ -174,6 +174,42 @@ export default function ExamResults() {
       return max > 0 ? ((obtained / max) * 100).toFixed(2) : 0;
   };
 
+  // Helper to get students with pre-calculated ranks based on current marks
+  const getRankedStudents = () => {
+      if (!students || students.length === 0) return [];
+      // Calculate total obtained for everyone
+      const withTotals = students.map(s => ({
+          ...s,
+          totalObtained: calculateTotalObtained(s)
+      }));
+
+      // Sort descending by total
+      const sorted = [...withTotals].sort((a, b) => b.totalObtained - a.totalObtained);
+
+      // Assign ranks (handle ties)
+      let currentRank = 1;
+      for (let i = 0; i < sorted.length; i++) {
+          if (i > 0 && sorted[i].totalObtained < sorted[i - 1].totalObtained) {
+              currentRank = i + 1;
+          }
+          sorted[i].rank = currentRank;
+      }
+
+      // Merge back ranks into original array ordered by rollNo
+      return students.map(s => {
+          const rankedVer = sorted.find(rs => rs.rollNo === s.rollNo);
+          return { ...s, rank: rankedVer ? rankedVer.rank : '-' };
+      });
+  };
+
+  const getRankBadge = (rank) => {
+      if (rank === 1) return <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-full px-2 py-0.5 text-xs font-bold whitespace-nowrap shadow-sm">🥇 1st</span>;
+      if (rank === 2) return <span className="inline-flex items-center justify-center bg-gray-200 text-gray-800 border border-gray-400 rounded-full px-2 py-0.5 text-xs font-bold whitespace-nowrap shadow-sm">🥈 2nd</span>;
+      if (rank === 3) return <span className="inline-flex items-center justify-center bg-orange-100 text-orange-800 border border-orange-300 rounded-full px-2 py-0.5 text-xs font-bold whitespace-nowrap shadow-sm">🥉 3rd</span>;
+      if (rank <= 10) return <span className="inline-flex items-center justify-center bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2 py-0.5 text-xs font-bold whitespace-nowrap shadow-sm">Top 10 (Rank {rank})</span>;
+      return <span className="text-gray-500 font-medium text-sm">{rank}</span>;
+  };
+
   const openGraph = (student) => {
       if (!config?.subjectGroups) return;
 
@@ -302,6 +338,7 @@ export default function ExamResults() {
                 ))}
                 <TableHead rowSpan={2} className="w-24 text-center font-bold border-l bg-gray-50 align-bottom pb-4">Total</TableHead>
                 <TableHead rowSpan={2} className="w-24 text-center font-bold bg-gray-50 border-r align-bottom pb-4">%</TableHead>
+                <TableHead rowSpan={2} className="w-24 text-center font-bold bg-blue-50 text-blue-800 border-r align-bottom pb-4">Rank</TableHead>
                 {user && <TableHead rowSpan={2} className="w-16 bg-white z-10"></TableHead>}
               </TableRow>
               <TableRow>
@@ -317,8 +354,8 @@ export default function ExamResults() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {students.map((student, index) => (
-                <TableRow key={index} className="hover:bg-gray-50/50">
+              {getRankedStudents().map((student, index) => (
+                <TableRow key={index} className={`hover:bg-gray-50/50 ${student.rank === 1 ? 'bg-yellow-50/30' : ''} ${student.rank === 2 ? 'bg-gray-50/80' : ''} ${student.rank === 3 ? 'bg-orange-50/30' : ''}`}>
                   <TableCell className="text-center sticky left-0 bg-white z-10 shadow-sm border-r">
                     {user ? (
                       <Input
@@ -393,6 +430,9 @@ export default function ExamResults() {
                   </TableCell>
                   <TableCell className="text-center font-bold bg-gray-50 border-r">
                     {calculatePercentage(student)}%
+                  </TableCell>
+                  <TableCell className="text-center bg-gray-50 border-r">
+                    {getRankBadge(student.rank)}
                   </TableCell>
 
                   {user && (

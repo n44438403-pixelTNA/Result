@@ -214,8 +214,17 @@ export default function ClassResult() {
                 <TableBody>
                 {aggregatedStudents.map((student) => {
                     const perc = student.grandMax > 0 ? ((student.grandObtained / student.grandMax) * 100).toFixed(2) : 0;
+
+                    const getRankBadge = (rank) => {
+                        if (rank === 1) return <span className="inline-flex items-center justify-center bg-yellow-100 text-yellow-800 border border-yellow-300 rounded-full px-2 py-0.5 text-sm font-bold whitespace-nowrap shadow-sm">🥇 1st</span>;
+                        if (rank === 2) return <span className="inline-flex items-center justify-center bg-gray-200 text-gray-800 border border-gray-400 rounded-full px-2 py-0.5 text-sm font-bold whitespace-nowrap shadow-sm">🥈 2nd</span>;
+                        if (rank === 3) return <span className="inline-flex items-center justify-center bg-orange-100 text-orange-800 border border-orange-300 rounded-full px-2 py-0.5 text-sm font-bold whitespace-nowrap shadow-sm">🥉 3rd</span>;
+                        if (rank <= 10) return <span className="inline-flex items-center justify-center bg-blue-50 text-blue-700 border border-blue-200 rounded-full px-2 py-0.5 text-sm font-bold whitespace-nowrap shadow-sm">Top 10 (#{rank})</span>;
+                        return <span className="text-gray-600 font-bold">{rank}</span>;
+                    };
+
                     return (
-                        <TableRow key={student.rollNo} className="hover:bg-gray-50/50">
+                        <TableRow key={student.rollNo} className={`hover:bg-gray-50/50 ${student.rank === 1 ? 'bg-yellow-50/30' : ''} ${student.rank === 2 ? 'bg-gray-50/80' : ''} ${student.rank === 3 ? 'bg-orange-50/30' : ''}`}>
                         <TableCell className="text-center sticky left-0 bg-white z-10 border-r font-medium">
                             {student.rollNo}
                         </TableCell>
@@ -241,8 +250,8 @@ export default function ClassResult() {
                         <TableCell className="text-center font-bold bg-gray-50 border-r">
                             {perc}%
                         </TableCell>
-                        <TableCell className="text-center font-black text-blue-800 bg-blue-50 text-lg border-r">
-                            {student.rank}
+                        <TableCell className="text-center font-black text-blue-800 bg-blue-50/50 border-r">
+                            {getRankBadge(student.rank)}
                         </TableCell>
                         <TableCell className="text-center print:hidden">
                              <div className="flex items-center justify-center gap-2">
