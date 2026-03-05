@@ -99,25 +99,37 @@ export default function StudentGraphModal({ student, datasets, isOpen, onClose, 
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-4xl">
-        <DialogHeader className="flex flex-row justify-between items-start border-b pb-4">
+      <DialogContent className="max-w-max max-h-[90vh] overflow-y-auto print:max-h-none print:overflow-visible print:border-none print:shadow-none print:p-0 bg-gray-100 print:bg-white">
+
+        <style>
+          {`
+            @media print {
+              @page { size: A4 landscape; margin: 15mm; }
+              body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            }
+          `}
+        </style>
+
+        <DialogHeader className="flex flex-row justify-between items-start border-b pb-4 print:hidden">
           <div>
             <DialogTitle className="text-xl">Performance Trend: {student.name}</DialogTitle>
           </div>
-          <Button variant="ghost" size="icon" onClick={onClose}>
+          <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 print:hidden text-gray-500 hover:text-gray-900">
              <X className="h-5 w-5" />
           </Button>
         </DialogHeader>
 
-        <div className="flex gap-2 mb-4 justify-end print:hidden">
-            <Button variant="outline" size="sm" onClick={() => window.print()}>
+        <div className="flex gap-2 mb-4 justify-end print:hidden max-w-[297mm] mx-auto pt-4">
+            <Button variant="outline" size="sm" onClick={() => window.print()} className="bg-white">
                <Printer className="h-4 w-4 mr-2" /> Print
             </Button>
         </div>
 
-        <div className="p-6 bg-white border rounded print:border-none print:shadow-none" ref={printRef}>
-            <div className="text-center mb-8">
-               <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+        <div className="mx-auto p-10 bg-white shadow-xl relative print:shadow-none print:border-[3px] print:border-gray-900 print:m-0 print:p-8 overflow-hidden"
+             style={{ width: '297mm', minHeight: '210mm', boxSizing: 'border-box' }}
+             ref={printRef}>
+            <div className="text-center mb-8 pb-4 border-b-[3px] border-double border-gray-800">
+               <h2 className="text-3xl font-black text-[#1e3a8a] uppercase tracking-tight mb-2 font-serif">{title}</h2>
                <p className="text-gray-600">Student: <span className="font-semibold text-gray-900">{student.name}</span> | Roll No: {student.rollNo}</p>
             </div>
 
