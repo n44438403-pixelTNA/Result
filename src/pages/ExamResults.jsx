@@ -27,6 +27,7 @@ export default function ExamResults() {
   const [isGraphOpen, setIsGraphOpen] = useState(false);
   const [graphData, setGraphData] = useState([]);
 
+  const [searchQuery, setSearchQuery] = useState('');
   const [searchRollNo, setSearchRollNo] = useState('');
   const [searchError, setSearchError] = useState('');
 
@@ -174,6 +175,16 @@ export default function ExamResults() {
       return max > 0 ? ((obtained / max) * 100).toFixed(2) : 0;
   };
 
+  const getGrade = (percentage) => {
+      if (percentage >= 90) return 'A+';
+      if (percentage >= 80) return 'A';
+      if (percentage >= 70) return 'B+';
+      if (percentage >= 60) return 'B';
+      if (percentage >= 50) return 'C';
+      if (percentage >= 40) return 'D';
+      return 'F';
+  };
+
   // Helper to get students with pre-calculated ranks based on current marks
   const getRankedStudents = () => {
       if (!students || students.length === 0) return [];
@@ -274,6 +285,23 @@ export default function ExamResults() {
 
   const subjectGroups = config?.subjectGroups || [];
 
+  const rankedStudentsList = getRankedStudents();
+
+  // Apply live search filtering
+  const filteredStudents = rankedStudentsList.filter(s => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (s.name && s.name.toLowerCase().includes(q)) ||
+             (s.rollNo && s.rollNo.toString().includes(q));
+  });
+
+  // Calculate Summary Stats
+  const totalStudents = rankedStudentsList.length;
+  const classAvgPerc = totalStudents > 0
+      ? (rankedStudentsList.reduce((acc, s) => acc + parseFloat(calculatePercentage(s)), 0) / totalStudents).toFixed(2)
+      : 0;
+  const highestScore = totalStudents > 0 ? Math.max(...rankedStudentsList.map(s => s.totalObtained)) : 0;
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row items-center justify-between gap-4">
@@ -287,20 +315,15 @@ export default function ExamResults() {
           </div>
         </div>
         <div className="flex items-center gap-4 w-full md:w-auto">
-            {!user && (
-                <div className="flex items-center gap-2 flex-1 md:flex-none">
-                    <Input
-                        placeholder="Search Roll No..."
-                        value={searchRollNo}
-                        onChange={(e) => setSearchRollNo(e.target.value)}
-                        className="w-32 md:w-40"
-                    />
-                    <Button variant="default" onClick={handleSearch} className="px-3">
-                       <Search className="h-4 w-4" />
-                    </Button>
-                    {searchError && <span className="text-red-500 text-xs absolute mt-12">{searchError}</span>}
-                </div>
-            )}
+            <div className="flex items-center gap-2 flex-1 md:flex-none">
+                <Search className="h-5 w-5 text-gray-400 hidden md:block" />
+                <Input
+                    placeholder="Filter by Name or Roll No..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full md:w-64"
+                />
+            </div>
             {!user ? (
                <Button variant="outline" onClick={() => navigate('/login')} className="flex items-center gap-2 shrink-0">
                   <UserCircle className="h-4 w-4" /> Admin
@@ -316,6 +339,22 @@ export default function ExamResults() {
                </>
             )}
         </div>
+      </div>
+
+      {/* Summary Dashboard */}
+      <div className="grid grid-cols-3 gap-4 mb-2">
+         <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center">
+            <span className="text-sm text-gray-500 font-medium">Total Students</span>
+            <span className="text-2xl font-bold text-gray-800">{totalStudents}</span>
+         </div>
+         <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center">
+            <span className="text-sm text-gray-500 font-medium">Class Average</span>
+            <span className="text-2xl font-bold text-blue-600">{classAvgPerc}%</span>
+         </div>
+         <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center">
+            <span className="text-sm text-gray-500 font-medium">Highest Score</span>
+            <span className="text-2xl font-bold text-green-600">{highestScore}</span>
+         </div>
       </div>
 
       {user && showConfig && (
@@ -337,7 +376,8 @@ export default function ExamResults() {
                    )
                 ))}
                 <TableHead rowSpan={2} className="w-24 text-center font-bold border-l bg-gray-50 align-bottom pb-4">Total</TableHead>
-                <TableHead rowSpan={2} className="w-24 text-center font-bold bg-gray-50 border-r align-bottom pb-4">%</TableHead>
+                <TableHead rowSpan={2} className="w-20 text-center font-bold bg-gray-50 align-bottom pb-4">%</TableHead>
+                <TableHead rowSpan={2} className="w-16 text-center font-bold bg-gray-50 border-r align-bottom pb-4">Grade</TableHead>
                 <TableHead rowSpan={2} className="w-24 text-center font-bold bg-blue-50 text-blue-800 border-r align-bottom pb-4">Rank</TableHead>
                 {user && <TableHead rowSpan={2} className="w-16 bg-white z-10"></TableHead>}
               </TableRow>
@@ -354,7 +394,14 @@ export default function ExamResults() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {getRankedStudents().map((student, index) => (
+              {filteredStudents.length === 0 && (
+                 <TableRow>
+                    <TableCell colSpan={10} className="text-center py-8 text-gray-500">No students found matching your search.</TableCell>
+                 </TableRow>
+              )}
+              {filteredStudents.map((student, index) => {
+                const perc = calculatePercentage(student);
+                return (
                 <TableRow key={index} className={`hover:bg-gray-50/50 ${student.rank === 1 ? 'bg-yellow-50/30' : ''} ${student.rank === 2 ? 'bg-gray-50/80' : ''} ${student.rank === 3 ? 'bg-orange-50/30' : ''}`}>
                   <TableCell className="text-center sticky left-0 bg-white z-10 shadow-sm border-r">
                     {user ? (
@@ -428,8 +475,11 @@ export default function ExamResults() {
                     {calculateTotalObtained(student)}
                     <span className="text-xs text-gray-400 block font-normal">/ {calculateTotalMax()}</span>
                   </TableCell>
-                  <TableCell className="text-center font-bold bg-gray-50 border-r">
-                    {calculatePercentage(student)}%
+                  <TableCell className="text-center font-bold bg-gray-50">
+                    {perc}%
+                  </TableCell>
+                  <TableCell className={`text-center font-bold border-r ${perc >= 90 ? 'text-green-600' : perc >= 70 ? 'text-blue-600' : perc >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                    {getGrade(perc)}
                   </TableCell>
                   <TableCell className="text-center bg-gray-50 border-r">
                     {getRankBadge(student.rank)}
@@ -443,7 +493,8 @@ export default function ExamResults() {
                     </TableCell>
                   )}
                 </TableRow>
-              ))}
+                );
+              })}
             </TableBody>
           </Table>
 
