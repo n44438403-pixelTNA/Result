@@ -121,7 +121,11 @@ export default function BrowsePage() {
     // Create exam with default config
     await db.saveExamConfig(session, className, newExamName, {
       maxMarks: 100,
-      subjects: ['Math', 'Science', 'English'] // Default subjects
+      subjectGroups: [
+          { subjectName: 'Math', tests: [] },
+          { subjectName: 'Science', tests: [] },
+          { subjectName: 'Social Science', tests: [] }
+      ]
     });
     setNewExamName('');
     setShowAddExam(null);
