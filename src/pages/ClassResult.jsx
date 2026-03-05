@@ -253,7 +253,7 @@ export default function ClassResult() {
                         let totalTestsInExam = 0;
                         if (examConfig?.subjectGroups) {
                             examConfig.subjectGroups.forEach(g => {
-                                totalTestsInExam += g.tests.length;
+                                totalTestsInExam += (g.tests || []).length;
                             });
                         }
                         if (totalTestsInExam === 0) totalTestsInExam = 1; // Fallback if empty config
@@ -282,7 +282,7 @@ export default function ClassResult() {
                         return examConfig.subjectGroups.map((group, gIdx) => {
                             if (!group.tests || group.tests.length === 0) return null;
                             return (
-                                <TableHead key={`${exam}-sub-${gIdx}`} colSpan={group.tests.length} className="text-center border-r border-b font-bold bg-indigo-50/50 text-indigo-900">
+                                <TableHead key={`${exam}-sub-${gIdx}`} colSpan={(group.tests || []).length} className="text-center border-r border-b font-bold bg-indigo-50/50 text-indigo-900">
                                     {group.subjectName}
                                 </TableHead>
                             );
