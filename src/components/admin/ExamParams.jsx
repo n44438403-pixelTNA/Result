@@ -50,33 +50,37 @@ export default function ExamParams({ config, onSave }) {
 
   const updateSubjectName = (groupIndex, newName) => {
     const updated = [...subjectGroups];
-    updated[groupIndex].subjectName = newName;
+    updated[groupIndex] = { ...updated[groupIndex], subjectName: newName };
     setSubjectGroups(updated);
   };
 
   const addTestToGroup = (groupIndex) => {
     const updated = [...subjectGroups];
-    const group = updated[groupIndex];
-    group.tests.push({
+    const group = { ...updated[groupIndex] };
+    const newTest = {
       id: `test_${Date.now()}_${Math.floor(Math.random()*1000)}`,
       name: `Test ${group.tests.length + 1}`,
       maxMarks: 100,
       date: new Date().toISOString().split('T')[0]
-    });
+    };
+    group.tests = [...group.tests, newTest];
+    updated[groupIndex] = group;
     setSubjectGroups(updated);
   };
 
   const updateTest = (groupIndex, testId, field, value) => {
     const updated = [...subjectGroups];
-    const group = updated[groupIndex];
+    const group = { ...updated[groupIndex] };
     group.tests = group.tests.map(test => test.id === testId ? { ...test, [field]: value } : test);
+    updated[groupIndex] = group;
     setSubjectGroups(updated);
   };
 
   const removeTest = (groupIndex, testId) => {
     const updated = [...subjectGroups];
-    const group = updated[groupIndex];
+    const group = { ...updated[groupIndex] };
     group.tests = group.tests.filter(test => test.id !== testId);
+    updated[groupIndex] = group;
     setSubjectGroups(updated);
   };
 
