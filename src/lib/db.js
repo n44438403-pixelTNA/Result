@@ -174,7 +174,7 @@ export const dbService = {
 
   saveExamConfig: async (session, classId, examId, config) => {
     const docRef = doc(db, COLLECTION_SESSIONS, session, 'classes', classId, 'exams', examId);
-    await setDoc(docRef, { config }, { merge: true });
+    await setDoc(docRef, { config }, { mergeFields: ['config'] });
     return config;
   },
   
