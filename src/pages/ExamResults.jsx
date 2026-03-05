@@ -224,10 +224,14 @@ export default function ExamResults() {
   const openGraph = (student) => {
       if (!config?.subjectGroups) return;
 
-      // View 1: Test-wise (Timeline) - Aggregating by test date/name across subjects
+      // View 1: Test-wise (Aggregated Timeline)
       const testAggregates = new Map();
-      // View 2: Subject-wise - Aggregating by subject name
+      // View 2: Subject-wise (Aggregated by subject)
       const subjectAggregates = new Map();
+      // View 3: Detailed All Tests (Grouped by Subject sequentially)
+      const detailedTests = [];
+      // View 4: Detailed All Tests Chronological (Sorted by date)
+      const chronologicalTests = [];
 
       config.subjectGroups.forEach(group => {
           const subKey = group.subjectName;
@@ -240,7 +244,22 @@ export default function ExamResults() {
               const key = test.date || test.name;
               const marks = parseInt(student.marks?.[test.id]) || 0;
               const max = parseInt(test.maxMarks) || 0;
+              const perc = max > 0 ? ((marks / max) * 100).toFixed(2) : 0;
 
+              // Build raw detailed point
+              const detailedPoint = {
+                  label: `${subKey} - ${test.name}`,
+                  percentage: perc,
+                  date: test.date || '',
+                  subject: subKey
+              };
+
+              if (max > 0) {
+                 detailedTests.push(detailedPoint);
+                 chronologicalTests.push(detailedPoint);
+              }
+
+              // Build aggregates
               if (!testAggregates.has(key)) {
                   testAggregates.set(key, { obtained: 0, max: 0, label: key });
               }
@@ -261,9 +280,14 @@ export default function ExamResults() {
           });
       };
 
+      // Sort chronological by date
+      chronologicalTests.sort((a, b) => a.date.localeCompare(b.date));
+
       setGraphData({
-          testWise: buildDataArray(testAggregates),
-          subjectWise: buildDataArray(subjectAggregates)
+          groupedBySubject: detailedTests,
+          chronologicalTimeline: chronologicalTests,
+          testAggregate: buildDataArray(testAggregates),
+          subjectAggregate: buildDataArray(subjectAggregates)
       });
       setSelectedStudent(student);
       setIsGraphOpen(true);

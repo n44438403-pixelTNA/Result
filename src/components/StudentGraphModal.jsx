@@ -26,7 +26,7 @@ export default function StudentGraphModal({ student, datasets, isOpen, onClose, 
 
     // Dynamic SVG dimensions based on data length (makes it scrollable if many points)
     const baseWidth = Math.max(800, currentData.length * 100);
-    const height = 350;
+    const height = 400; // Increased height to accommodate rotated 45deg labels without clipping
     const paddingX = 60;
     const paddingY = 40;
 
@@ -87,7 +87,7 @@ export default function StudentGraphModal({ student, datasets, isOpen, onClose, 
                      <text x={p.x} y={p.y - 18} textAnchor="middle" fontSize="12" fontWeight="bold" fill="#ffffff">
                         {p.perc}%
                      </text>
-                     <text x={p.x} y={height + 20} textAnchor="middle" fontSize="12" fill="#4b5563" transform={`rotate(15, ${p.x}, ${height+20})`}>
+                     <text x={p.x} y={height + 25} textAnchor="start" fontSize="12" fill="#4b5563" transform={`rotate(45, ${p.x}, ${height+25})`}>
                         {p.label}
                      </text>
                   </g>
