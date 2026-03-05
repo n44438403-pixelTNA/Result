@@ -1,13 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
+import { db } from '../lib/db';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [instituteSettings, setInstituteSettings] = useState(null);
+
+  useEffect(() => {
+    db.getInstituteSettings().then(setInstituteSettings);
+  }, []);
   const [error, setError] = useState('');
   const { login, user } = useAuth();
   const navigate = useNavigate();
@@ -31,10 +37,24 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center pt-16">
+    <div className="flex flex-col items-center justify-center pt-16">
+      <div className="text-center mb-8">
+        <h1 className="text-4xl font-black text-blue-900 mb-2 uppercase tracking-wide font-serif drop-shadow-sm">
+            {instituteSettings?.instituteName || "Result Portal"}
+        </h1>
+        <h2 className="text-xl font-bold text-gray-700 mb-4 tracking-wider">
+            {instituteSettings?.tagline || "Manage and view examination results efficiently."}
+        </h2>
+        {(instituteSettings?.address || instituteSettings?.directorName) && (
+            <div className="mt-2 text-sm text-gray-400 font-semibold tracking-widest uppercase">
+                {instituteSettings?.address} {instituteSettings?.address && instituteSettings?.directorName && ' | '} {instituteSettings?.directorName && `Director: ${instituteSettings?.directorName}`}
+            </div>
+        )}
+      </div>
+
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-2xl text-center">Admin Login</CardTitle>
+          <CardTitle className="text-2xl text-center">Settings</CardTitle>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
