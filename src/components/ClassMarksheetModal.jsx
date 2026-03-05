@@ -281,10 +281,15 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
            ))}
         </div>
 
-        <div className="mt-2 p-6 bg-white border rounded shadow-sm print:border-none print:shadow-none print:p-0" ref={printRef}>
+        <div className="mt-2 p-8 bg-white border rounded shadow-sm print:border-2 print:border-gray-800 print:shadow-none print:p-8 relative" ref={printRef}>
+
+          {/* Subtle Watermark for Print */}
+          <div className="hidden print:flex absolute inset-0 items-center justify-center pointer-events-none opacity-5">
+              <span className="text-8xl font-black uppercase tracking-widest rotate-[-45deg]">{institute}</span>
+          </div>
 
           {/* Marks Header (Coaching Info) */}
-          <div className="text-center mb-6 pb-4 border-b-2 border-gray-300">
+          <div className="text-center mb-6 pb-4 border-b-2 border-gray-800 relative z-10">
              <h1 className="text-3xl font-black text-blue-900 tracking-tight uppercase mb-1">{institute}</h1>
              {(address || mobile) && (
                  <p className="text-sm text-gray-700 font-medium">
@@ -334,7 +339,39 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
             </div>
           )}
 
-          <div className="mt-12 text-center text-xs text-gray-400 font-medium">
+          {/* Remarks Section */}
+          <div className="mt-8 p-4 bg-gray-50 border rounded-md relative z-10 print:bg-white print:border-gray-400">
+              <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-1">Teacher's Remarks</h3>
+              <p className="text-lg font-medium text-gray-800 italic">
+                  {student.grandMax > 0 ? (
+                      ((student.grandObtained / student.grandMax) * 100) >= 90 ? "Outstanding Overall Performance!" :
+                      ((student.grandObtained / student.grandMax) * 100) >= 80 ? "Excellent Academic Record!" :
+                      ((student.grandObtained / student.grandMax) * 100) >= 70 ? "Good Effort, Keep Pushing." :
+                      ((student.grandObtained / student.grandMax) * 100) >= 60 ? "Satisfactory Results." :
+                      ((student.grandObtained / student.grandMax) * 100) >= 50 ? "Below Average. Needs Focus." :
+                      ((student.grandObtained / student.grandMax) * 100) >= 40 ? "Marginal Pass." :
+                      "Fail. Please consult with the teacher."
+                  ) : "N/A"}
+              </p>
+          </div>
+
+          {/* Signatures */}
+          <div className="mt-20 flex justify-between px-4 relative z-10">
+              <div className="text-center">
+                  <div className="w-32 border-t-2 border-gray-800 mb-2"></div>
+                  <span className="text-sm font-bold text-gray-600">Parent's Signature</span>
+              </div>
+              <div className="text-center">
+                  <div className="w-32 border-t-2 border-gray-800 mb-2"></div>
+                  <span className="text-sm font-bold text-gray-600">Class Teacher</span>
+              </div>
+              <div className="text-center">
+                  <div className="w-32 border-t-2 border-gray-800 mb-2"></div>
+                  <span className="text-sm font-bold text-gray-600">Principal</span>
+              </div>
+          </div>
+
+          <div className="mt-12 text-center text-xs text-gray-400 font-medium relative z-10">
               Developed by Nadim Anwar
           </div>
         </div>

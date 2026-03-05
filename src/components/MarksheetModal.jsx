@@ -25,10 +25,20 @@ export default function MarksheetModal({ student, config, isOpen, onClose, sessi
       window.print();
   };
 
+  const getRemarks = (perc) => {
+      if (perc >= 90) return "Outstanding Performance! Keep it up.";
+      if (perc >= 80) return "Excellent Work! Great job.";
+      if (perc >= 70) return "Good Effort. Room for improvement.";
+      if (perc >= 60) return "Satisfactory. Needs more focus.";
+      if (perc >= 50) return "Below Average. Hard work required.";
+      if (perc >= 40) return "Marginal Pass. Immediate attention needed.";
+      return "Fail. Please consult with the teacher.";
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto print:max-h-none print:overflow-visible print:border-none print:shadow-none print:p-0">
-        <DialogHeader className="flex flex-row justify-between items-start border-b pb-4">
+        <DialogHeader className="flex flex-row justify-between items-start border-b pb-4 print:hidden">
           <div>
             <DialogTitle className="text-xl">Marksheet 2.0</DialogTitle>
             <DialogDescription>Student Name: {student.name}</DialogDescription>
@@ -38,9 +48,15 @@ export default function MarksheetModal({ student, config, isOpen, onClose, sessi
           </Button>
         </DialogHeader>
 
-        <div className="mt-2 p-6 bg-white border rounded shadow-sm print:border-none print:shadow-none print:p-0" ref={printRef}>
+        <div className="mt-2 p-8 bg-white border rounded shadow-sm print:border-2 print:border-gray-800 print:shadow-none print:p-8 relative" ref={printRef}>
+
+          {/* Subtle Watermark for Print */}
+          <div className="hidden print:flex absolute inset-0 items-center justify-center pointer-events-none opacity-5">
+              <span className="text-8xl font-black uppercase tracking-widest rotate-[-45deg]">{institute}</span>
+          </div>
+
           {/* Header Info */}
-          <div className="text-center mb-6 pb-4 border-b-2 border-gray-300">
+          <div className="text-center mb-6 pb-4 border-b-2 border-gray-800 relative z-10">
              <h1 className="text-3xl font-black text-blue-900 tracking-tight uppercase mb-1">{institute}</h1>
              {(address || mobile) && (
                  <p className="text-sm text-gray-700 font-medium">
@@ -105,16 +121,40 @@ export default function MarksheetModal({ student, config, isOpen, onClose, sessi
                   })}
                 </React.Fragment>
               ))}
-              <TableRow className="bg-blue-50 font-bold border-t-4 border-double">
-                <TableCell colSpan={3}>Grand Total</TableCell>
-                <TableCell className="text-right">{grandTotalMax}</TableCell>
-                <TableCell className="text-right text-blue-700">{grandTotalObtained}</TableCell>
-                <TableCell className="text-right text-blue-700">{grandTotalMax > 0 ? ((grandTotalObtained / grandTotalMax) * 100).toFixed(2) : 0}%</TableCell>
+              <TableRow className="bg-blue-50 font-bold border-t-4 border-double print:bg-gray-100">
+                <TableCell colSpan={3} className="text-lg">Grand Total</TableCell>
+                <TableCell className="text-right text-lg">{grandTotalMax}</TableCell>
+                <TableCell className="text-right text-blue-800 text-lg">{grandTotalObtained}</TableCell>
+                <TableCell className="text-right text-blue-800 text-lg">{grandTotalMax > 0 ? ((grandTotalObtained / grandTotalMax) * 100).toFixed(2) : 0}%</TableCell>
               </TableRow>
             </TableBody>
           </Table>
 
-          <div className="mt-12 text-center text-xs text-gray-400 font-medium">
+          {/* Remarks Section */}
+          <div className="mt-8 p-4 bg-gray-50 border rounded-md relative z-10 print:bg-white print:border-gray-400">
+              <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-1">Teacher's Remarks</h3>
+              <p className="text-lg font-medium text-gray-800 italic">
+                  {grandTotalMax > 0 ? getRemarks((grandTotalObtained / grandTotalMax) * 100) : "N/A"}
+              </p>
+          </div>
+
+          {/* Signatures */}
+          <div className="mt-20 flex justify-between px-4 relative z-10">
+              <div className="text-center">
+                  <div className="w-32 border-t-2 border-gray-800 mb-2"></div>
+                  <span className="text-sm font-bold text-gray-600">Parent's Signature</span>
+              </div>
+              <div className="text-center">
+                  <div className="w-32 border-t-2 border-gray-800 mb-2"></div>
+                  <span className="text-sm font-bold text-gray-600">Class Teacher</span>
+              </div>
+              <div className="text-center">
+                  <div className="w-32 border-t-2 border-gray-800 mb-2"></div>
+                  <span className="text-sm font-bold text-gray-600">Principal</span>
+              </div>
+          </div>
+
+          <div className="mt-12 text-center text-xs text-gray-400 font-medium relative z-10">
               Developed by Nadim Anwar
           </div>
         </div>

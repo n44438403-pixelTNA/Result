@@ -44,9 +44,19 @@ export default function StudentGraphModal({ student, datasets, isOpen, onClose, 
 
     const pathData = points.map((p, i) => `${i === 0 ? 'M' : 'L'} ${p.x} ${p.y}`).join(' ');
 
+    // Area fill path (closes down to the bottom)
+    const areaPathData = `${pathData} L ${points[points.length - 1].x} ${paddingY + usableHeight} L ${points[0].x} ${paddingY + usableHeight} Z`;
+
     return (
-        <div className="w-full overflow-x-auto mt-6 border p-4 rounded bg-gray-50 custom-scrollbar">
+        <div className="w-full overflow-x-auto mt-6 border p-4 rounded bg-white shadow-inner custom-scrollbar relative">
             <svg viewBox={`0 0 ${baseWidth} ${height + 60}`} style={{ width: baseWidth, height: height + 60 }} className="font-sans">
+               <defs>
+                   <linearGradient id="gradientFill" x1="0" x2="0" y1="0" y2="1">
+                       <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.4" />
+                       <stop offset="100%" stopColor="#3b82f6" stopOpacity="0.0" />
+                   </linearGradient>
+               </defs>
+
                {/* Grid lines */}
                {[0, 25, 50, 75, 100].map(val => (
                   <g key={`grid-${val}`}>
@@ -63,14 +73,18 @@ export default function StudentGraphModal({ student, datasets, isOpen, onClose, 
                   </g>
                ))}
 
+               {/* The Trend Line Area Fill */}
+               <path d={areaPathData} fill="url(#gradientFill)" />
+
                {/* The Trend Line */}
-               <path d={pathData} fill="none" stroke="#3b82f6" strokeWidth="3" />
+               <path d={pathData} fill="none" stroke="#2563eb" strokeWidth="4" strokeLinecap="round" strokeLinejoin="round" />
 
                {/* Data Points & Labels */}
                {points.map((p, i) => (
                   <g key={`point-${i}`}>
-                     <circle cx={p.x} cy={p.y} r="6" fill="#1e40af" />
-                     <text x={p.x} y={p.y - 15} textAnchor="middle" fontSize="14" fontWeight="bold" fill="#1e40af">
+                     <circle cx={p.x} cy={p.y} r="6" fill="#ffffff" stroke="#1e40af" strokeWidth="3" />
+                     <rect x={p.x - 22} y={p.y - 35} width="44" height="24" rx="4" fill="#1e3a8a" opacity="0.9" />
+                     <text x={p.x} y={p.y - 18} textAnchor="middle" fontSize="12" fontWeight="bold" fill="#ffffff">
                         {p.perc}%
                      </text>
                      <text x={p.x} y={height + 20} textAnchor="middle" fontSize="12" fill="#4b5563" transform={`rotate(15, ${p.x}, ${height+20})`}>
@@ -107,8 +121,8 @@ export default function StudentGraphModal({ student, datasets, isOpen, onClose, 
                <p className="text-gray-600">Student: <span className="font-semibold text-gray-900">{student.name}</span> | Roll No: {student.rollNo}</p>
             </div>
 
-            <div className="mb-4 text-gray-600 text-sm italic text-center">
-                This timeline graph shows the "kam jayada" (ups and downs) of the student's percentage across all tests by date.
+            <div className="mb-4 text-gray-600 text-sm italic text-center print:hidden">
+                This timeline graph shows the performance trend (kam jayada) of the student across assessments.
             </div>
 
             {Object.keys(datasets).length > 1 && (
@@ -132,6 +146,20 @@ export default function StudentGraphModal({ student, datasets, isOpen, onClose, 
 
             {currentData && currentData.length > 0 ? (
                 <>
+                    {(() => {
+                        const highest = [...currentData].sort((a,b) => b.percentage - a.percentage)[0];
+                        const lowest = [...currentData].sort((a,b) => a.percentage - b.percentage)[0];
+                        return (
+                            <div className="bg-blue-50 border border-blue-100 p-4 rounded-md mb-2 mt-4 text-center shadow-sm">
+                                <h3 className="text-blue-800 font-bold mb-1">Performance Summary</h3>
+                                <p className="text-sm text-blue-900">
+                                    The student's performance peaked in <strong>{highest.label}</strong> with a score of <strong>{highest.percentage}%</strong>,
+                                    while the lowest recorded score was in <strong>{lowest.label}</strong> at <strong>{lowest.percentage}%</strong>.
+                                </p>
+                            </div>
+                        );
+                    })()}
+
                     {renderTrendLine()}
                     <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="border p-4 rounded bg-green-50 border-green-200">
