@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent } from '../components/ui/Card';
-import { ArrowLeft, Plus, Save, Trash, UserCircle, FileText, BarChart, Search } from 'lucide-react';
+import { ArrowLeft, Plus, Save, Trash, UserCircle, FileText, BarChart, Search, Maximize2, Minimize2 } from 'lucide-react';
 import ExamParams from '../components/admin/ExamParams';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import MarksheetModal from '../components/MarksheetModal';
@@ -30,6 +30,7 @@ export default function ExamResults() {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchRollNo, setSearchRollNo] = useState('');
   const [searchError, setSearchError] = useState('');
+  const [isFullScreenMode, setIsFullScreenMode] = useState(false);
 
   // Load data
   useEffect(() => {
@@ -348,17 +349,25 @@ export default function ExamResults() {
                     className="w-full md:w-64"
                 />
             </div>
+            <Button
+                variant={isFullScreenMode ? "default" : "outline"}
+                onClick={() => setIsFullScreenMode(!isFullScreenMode)}
+                className="shrink-0"
+                title="Toggle Full Screen (Anonymous) Mode"
+            >
+                {isFullScreenMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
             {!user ? (
                <Button variant="outline" onClick={() => navigate('/login')} className="flex items-center gap-2 shrink-0">
                   <UserCircle className="h-4 w-4" /> Admin
                </Button>
             ) : (
                <>
-                  <Button variant="outline" onClick={() => setShowConfig(!showConfig)}>
+                  <Button variant="outline" onClick={() => setShowConfig(!showConfig)} className="shrink-0">
                       {showConfig ? 'Hide Config' : 'Edit Config'}
                   </Button>
-                  <Button onClick={saveAll} disabled={isSaving}>
-                      <Save className="mr-2 h-4 w-4" /> {isSaving ? 'Saving...' : 'Save All'}
+                  <Button onClick={saveAll} disabled={isSaving} className="shrink-0">
+                      <Save className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">{isSaving ? 'Saving...' : 'Save All'}</span>
                   </Button>
                </>
             )}
@@ -366,18 +375,18 @@ export default function ExamResults() {
       </div>
 
       {/* Summary Dashboard */}
-      <div className="grid grid-cols-3 gap-4 mb-2">
-         <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center">
-            <span className="text-sm text-gray-500 font-medium">Total Students</span>
-            <span className="text-2xl font-bold text-gray-800">{totalStudents}</span>
+      <div className="grid grid-cols-3 gap-2 md:gap-4 mb-2">
+         <div className="bg-white p-2 md:p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center text-center">
+            <span className="text-xs md:text-sm text-gray-500 font-medium">Total Students</span>
+            <span className="text-lg md:text-2xl font-bold text-gray-800">{totalStudents}</span>
          </div>
-         <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center">
-            <span className="text-sm text-gray-500 font-medium">Class Average</span>
-            <span className="text-2xl font-bold text-blue-600">{classAvgPerc}%</span>
+         <div className="bg-white p-2 md:p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center text-center">
+            <span className="text-xs md:text-sm text-gray-500 font-medium">Class Average</span>
+            <span className="text-lg md:text-2xl font-bold text-blue-600">{classAvgPerc}%</span>
          </div>
-         <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center">
-            <span className="text-sm text-gray-500 font-medium">Highest Score</span>
-            <span className="text-2xl font-bold text-green-600">{highestScore}</span>
+         <div className="bg-white p-2 md:p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center text-center">
+            <span className="text-xs md:text-sm text-gray-500 font-medium">Highest Score</span>
+            <span className="text-lg md:text-2xl font-bold text-green-600">{highestScore}</span>
          </div>
       </div>
 
@@ -391,7 +400,9 @@ export default function ExamResults() {
             <TableHeader>
               <TableRow>
                 <TableHead rowSpan={2} className="w-20 sticky left-0 bg-white z-20 shadow-sm border-r align-bottom pb-4">Roll No</TableHead>
-                <TableHead rowSpan={2} className="w-64 sticky left-20 bg-white z-20 shadow-sm border-r align-bottom pb-4">Name</TableHead>
+                {!isFullScreenMode && (
+                    <TableHead rowSpan={2} className="w-64 sticky left-20 bg-white z-20 shadow-sm border-r align-bottom pb-4">Name</TableHead>
+                )}
                 {subjectGroups.map((group, i) => (
                    group.tests.length > 0 && (
                      <TableHead key={i} colSpan={group.tests.length} className="text-center border-r border-b font-bold bg-gray-50">
@@ -438,35 +449,48 @@ export default function ExamResults() {
                     ) : (
                       <span className="font-medium">{student.rollNo}</span>
                     )}
-                  </TableCell>
-                  <TableCell className="sticky left-20 bg-white z-10 shadow-sm border-r">
-                    {user ? (
-                      <div className="flex items-center gap-2">
-                        <Input
-                          value={student.name}
-                          onChange={(e) => handleStudentChange(index, 'name', e.target.value)}
-                          className="h-8 flex-1"
-                          placeholder="Student Name"
-                        />
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 shrink-0" onClick={() => setSelectedStudent(student)} title="View Marksheet">
-                           <FileText className="h-4 w-4" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500 shrink-0" onClick={() => openGraph(student)} title="View Performance Graph">
-                           <BarChart className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2 w-full">
-                        <span className="font-medium flex-1">{student.name || 'Unnamed Student'}</span>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-500 shrink-0" onClick={() => setSelectedStudent(student)} title="View Marksheet">
-                           <FileText className="h-3 w-3" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-6 w-6 text-indigo-500 shrink-0" onClick={() => openGraph(student)} title="View Performance Graph">
-                           <BarChart className="h-3 w-3" />
-                        </Button>
-                      </div>
+                    {/* Action buttons embedded here if Full Screen Mode is active */}
+                    {isFullScreenMode && (
+                         <div className="flex items-center justify-center gap-1 mt-1">
+                             <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-500" onClick={() => setSelectedStudent(student)} title="View Marksheet">
+                                <FileText className="h-3 w-3" />
+                             </Button>
+                             <Button variant="ghost" size="icon" className="h-6 w-6 text-indigo-500" onClick={() => openGraph(student)} title="View Performance Graph">
+                                <BarChart className="h-3 w-3" />
+                             </Button>
+                         </div>
                     )}
                   </TableCell>
+                  {!isFullScreenMode && (
+                      <TableCell className="sticky left-20 bg-white z-10 shadow-sm border-r">
+                        {user ? (
+                          <div className="flex items-center gap-2">
+                            <Input
+                              value={student.name}
+                              onChange={(e) => handleStudentChange(index, 'name', e.target.value)}
+                              className="h-8 flex-1"
+                              placeholder="Student Name"
+                            />
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-blue-500 shrink-0" onClick={() => setSelectedStudent(student)} title="View Marksheet">
+                               <FileText className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-indigo-500 shrink-0" onClick={() => openGraph(student)} title="View Performance Graph">
+                               <BarChart className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2 w-full">
+                            <span className="font-medium flex-1">{student.name || 'Unnamed Student'}</span>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-blue-500 shrink-0" onClick={() => setSelectedStudent(student)} title="View Marksheet">
+                               <FileText className="h-3 w-3" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6 text-indigo-500 shrink-0" onClick={() => openGraph(student)} title="View Performance Graph">
+                               <BarChart className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                      </TableCell>
+                  )}
 
                   {subjectGroups.map(group => (
                     group.tests.map(test => {
