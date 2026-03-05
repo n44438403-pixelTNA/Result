@@ -551,6 +551,7 @@ export default function ExamResults() {
                  setSelectedStudent(null);
              }}
              title={`Performance Overview: ${examId}`}
+             sessionDetails={sessionDetails}
           />
       )}
     </div>

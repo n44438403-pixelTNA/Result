@@ -13,9 +13,11 @@ export default function HomePage() {
   const [htmlBlocks, setHtmlBlocks] = useState([]);
   const [isEditingHtml, setIsEditingHtml] = useState(false);
   const [editingBlocks, setEditingBlocks] = useState([]);
+  const [instituteSettings, setInstituteSettings] = useState(null);
 
   useEffect(() => {
     loadHtmlBlocks();
+    db.getInstituteSettings().then(setInstituteSettings);
   }, []);
 
   const loadHtmlBlocks = async () => {
@@ -53,10 +55,20 @@ export default function HomePage() {
   return (
     <div className="flex flex-col items-center mt-16 pb-16">
       <div className="text-center mb-12">
-        <h1 className="text-4xl font-bold text-gray-800 mb-4">Welcome to Result Portal</h1>
-        <p className="text-gray-600 max-w-lg mx-auto">
-          Manage and view examination results efficiently. Students can view results organized by session, class, and exam. Administrators can securely edit results.
+        <h1 className="text-4xl font-black text-blue-900 mb-2 uppercase tracking-wide font-serif drop-shadow-sm">
+            {instituteSettings?.instituteName || "Welcome to Result Portal"}
+        </h1>
+        <h2 className="text-xl font-bold text-gray-700 mb-4 tracking-wider">
+            {instituteSettings?.tagline || "Manage and view examination results efficiently."}
+        </h2>
+        <p className="text-gray-500 max-w-lg mx-auto font-medium">
+          Students can view results organized by session, class, and exam. Administrators can securely edit results.
         </p>
+        {(instituteSettings?.address || instituteSettings?.directorName) && (
+            <div className="mt-6 text-sm text-gray-400 font-semibold tracking-widest uppercase">
+                {instituteSettings?.address} {instituteSettings?.address && instituteSettings?.directorName && ' | '} {instituteSettings?.directorName && `Director: ${instituteSettings?.directorName}`}
+            </div>
+        )}
       </div>
 
       <div className="flex justify-center w-full max-w-xl">

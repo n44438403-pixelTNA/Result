@@ -5,9 +5,15 @@ import { Download, Printer, X } from 'lucide-react';
 
 import { LayoutList } from 'lucide-react';
 
-export default function StudentGraphModal({ student, datasets, isOpen, onClose, title }) {
+export default function StudentGraphModal({ student, datasets, isOpen, onClose, title, sessionDetails }) {
   const printRef = useRef(null);
   const [activeView, setActiveView] = React.useState(null);
+
+  const institute = sessionDetails?.instituteName || 'Institute / Coaching Name';
+  const director = sessionDetails?.director || '';
+  const est = sessionDetails?.est || '';
+  const mobile = sessionDetails?.mobile || '';
+  const address = sessionDetails?.address || '';
 
   React.useEffect(() => {
      if (datasets && Object.keys(datasets).length > 0 && !activeView) {
@@ -125,12 +131,29 @@ export default function StudentGraphModal({ student, datasets, isOpen, onClose, 
             </Button>
         </div>
 
-        <div className="mx-auto p-10 bg-white shadow-xl relative print:shadow-none print:border-[3px] print:border-gray-900 print:m-0 print:p-8 overflow-hidden"
+        <div className="mx-auto p-10 bg-white shadow-xl relative print:shadow-none print:border-[3px] print:border-gray-900 print:m-0 print:p-8 overflow-hidden flex flex-col"
              style={{ width: '297mm', minHeight: '210mm', boxSizing: 'border-box' }}
              ref={printRef}>
-            <div className="text-center mb-8 pb-4 border-b-[3px] border-double border-gray-800">
-               <h2 className="text-3xl font-black text-[#1e3a8a] uppercase tracking-tight mb-2 font-serif">{title}</h2>
-               <p className="text-gray-600">Student: <span className="font-semibold text-gray-900">{student.name}</span> | Roll No: {student.rollNo}</p>
+
+            {/* Subtle Watermark for Print */}
+            <div className="hidden print:flex absolute inset-0 items-center justify-center pointer-events-none opacity-10">
+                <div className="text-6xl font-black uppercase tracking-[0.3em] text-gray-400 rotate-[-25deg] text-center leading-relaxed max-w-[250mm] break-words">
+                    {institute}
+                </div>
+            </div>
+
+            {/* Professional Header Info */}
+            <div className="text-center mb-6 pb-4 border-b-[3px] border-double border-gray-800 relative z-10">
+               <h1 className="text-3xl font-black text-[#1e3a8a] tracking-tight uppercase mb-1 font-serif drop-shadow-sm">{institute}</h1>
+               {(address || mobile) && (
+                   <p className="text-xs text-gray-700 font-semibold tracking-wide">
+                       {address} {address && mobile && ' | '} {mobile && `Mob: ${mobile}`}
+                   </p>
+               )}
+               <div className="mt-4 pt-2 border-t border-gray-200">
+                   <h2 className="text-xl font-bold text-gray-800">{title}</h2>
+                   <p className="text-sm text-gray-600 mt-1">Student: <span className="font-bold text-gray-900">{student.name}</span> <span className="mx-2 text-gray-300">|</span> Roll No: <span className="font-bold text-gray-900">{student.rollNo}</span></p>
+               </div>
             </div>
 
             <div className="mb-4 text-gray-600 text-sm italic text-center print:hidden">
@@ -196,7 +219,7 @@ export default function StudentGraphModal({ student, datasets, isOpen, onClose, 
                 <p className="text-center text-gray-500 py-12">No data available for this view.</p>
             )}
 
-            <div className="mt-12 text-center text-xs text-gray-400 font-medium">
+            <div className="mt-auto pt-8 text-center text-xs text-gray-400 font-medium relative z-10">
                 Developed by Nadim Anwar
             </div>
         </div>

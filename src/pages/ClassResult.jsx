@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { db } from '../lib/db';
 import { Button } from '../components/ui/Button';
+import { Input } from '../components/ui/Input';
 import { Card, CardContent } from '../components/ui/Card';
-import { ArrowLeft, Printer, FileText, BarChart } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, BarChart, Search } from 'lucide-react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import ClassMarksheetModal from '../components/ClassMarksheetModal';
 import StudentGraphModal from '../components/StudentGraphModal';
@@ -351,6 +352,7 @@ export default function ClassResult() {
                  setSelectedStudent(null);
              }}
              title={`Overall Performance Trend (All Exams)`}
+             sessionDetails={sessionDetails}
           />
       )}
     </div>
