@@ -4,7 +4,7 @@ import { db } from '../lib/db';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardContent } from '../components/ui/Card';
-import { ArrowLeft, Printer, FileText, BarChart, Search } from 'lucide-react';
+import { ArrowLeft, Printer, FileText, BarChart, Search, Maximize2, Minimize2 } from 'lucide-react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import ClassMarksheetModal from '../components/ClassMarksheetModal';
 import StudentGraphModal from '../components/StudentGraphModal';
@@ -25,6 +25,7 @@ export default function ClassResult() {
   const [graphData, setGraphData] = useState({});
 
   const [searchQuery, setSearchQuery] = useState('');
+  const [isFullScreenMode, setIsFullScreenMode] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -198,33 +199,43 @@ export default function ClassResult() {
              <p className="text-gray-500 text-sm">{session} / {classId}</p>
           </div>
         </div>
-        <div className="flex items-center gap-2">
-            <Search className="h-5 w-5 text-gray-400 hidden md:block" />
-            <Input
-                placeholder="Filter by Name or Roll No..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full md:w-64"
-            />
-            <Button variant="outline" onClick={() => window.print()} className="ml-2">
-                <Printer className="mr-2 h-4 w-4" /> Print
+        <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-2 flex-1 md:flex-none">
+                <Search className="h-5 w-5 text-gray-400 hidden md:block" />
+                <Input
+                    placeholder="Filter by Name or Roll No..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full md:w-64"
+                />
+            </div>
+            <Button
+                variant={isFullScreenMode ? "default" : "outline"}
+                onClick={() => setIsFullScreenMode(!isFullScreenMode)}
+                className="shrink-0"
+                title="Toggle Full Screen (Anonymous) Mode"
+            >
+                {isFullScreenMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+            <Button variant="outline" onClick={() => window.print()} className="shrink-0">
+                <Printer className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Print</span>
             </Button>
         </div>
       </div>
 
       {/* Summary Dashboard */}
-      <div className="grid grid-cols-3 gap-4 mb-2 print:hidden">
-         <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center">
-            <span className="text-sm text-gray-500 font-medium">Total Students</span>
-            <span className="text-2xl font-bold text-gray-800">{totalStudents}</span>
+      <div className="grid grid-cols-3 gap-2 md:gap-4 mb-2 print:hidden">
+         <div className="bg-white p-2 md:p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center text-center">
+            <span className="text-xs md:text-sm text-gray-500 font-medium">Total Students</span>
+            <span className="text-lg md:text-2xl font-bold text-gray-800">{totalStudents}</span>
          </div>
-         <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center">
-            <span className="text-sm text-gray-500 font-medium">Class Average</span>
-            <span className="text-2xl font-bold text-blue-600">{classAvgPerc}%</span>
+         <div className="bg-white p-2 md:p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center text-center">
+            <span className="text-xs md:text-sm text-gray-500 font-medium">Class Average</span>
+            <span className="text-lg md:text-2xl font-bold text-blue-600">{classAvgPerc}%</span>
          </div>
-         <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center">
-            <span className="text-sm text-gray-500 font-medium">Highest Score</span>
-            <span className="text-2xl font-bold text-green-600">{highestScore}</span>
+         <div className="bg-white p-2 md:p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center text-center">
+            <span className="text-xs md:text-sm text-gray-500 font-medium">Highest Score</span>
+            <span className="text-lg md:text-2xl font-bold text-green-600">{highestScore}</span>
          </div>
       </div>
 
@@ -247,7 +258,9 @@ export default function ClassResult() {
                 {/* Level 1 Headers: Exams */}
                 <TableRow>
                     <TableHead rowSpan={3} className="w-16 sticky left-0 bg-gray-100 z-30 border align-bottom text-center">Roll</TableHead>
-                    <TableHead rowSpan={3} className="w-48 sticky left-16 bg-gray-100 z-30 border align-bottom text-center">Student Name</TableHead>
+                    {!isFullScreenMode && (
+                        <TableHead rowSpan={3} className="w-48 sticky left-16 bg-gray-100 z-30 border align-bottom text-center">Student Name</TableHead>
+                    )}
 
                     {exams.map(exam => {
                         const examConfig = examConfigs[exam];
@@ -332,9 +345,11 @@ export default function ClassResult() {
                         <TableCell className="text-center sticky left-0 bg-white z-20 border font-bold text-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                             {student.rollNo}
                         </TableCell>
-                        <TableCell className="sticky left-16 bg-white z-20 border font-bold text-gray-900 shadow-[2px_0_5px_rgba(0,0,0,0.05)] whitespace-nowrap">
-                            {student.name || 'Unnamed Student'}
-                        </TableCell>
+                        {!isFullScreenMode && (
+                            <TableCell className="sticky left-16 bg-white z-20 border font-bold text-gray-900 shadow-[2px_0_5px_rgba(0,0,0,0.05)] whitespace-nowrap">
+                                {student.name || 'Unnamed Student'}
+                            </TableCell>
+                        )}
 
                         {exams.map(exam => {
                             const examConfig = examConfigs[exam];

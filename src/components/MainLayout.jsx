@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Outlet, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Button } from './ui/Button';
-import { LogOut, Home, ArrowLeft, Settings, DownloadCloud, Info } from 'lucide-react';
+import { LogOut, Home, ArrowLeft, Settings, DownloadCloud, Info, X } from 'lucide-react';
 import AdminManager from './admin/AdminManager';
 import { db } from '../lib/db';
 
@@ -11,12 +11,23 @@ export default function MainLayout() {
   const navigate = useNavigate();
   const [isAdminManagerOpen, setIsAdminManagerOpen] = useState(false);
   const [appConfig, setAppConfig] = useState({ appDownloadLink: '', globalNotice: '' });
+  const [isNoticeDismissed, setIsNoticeDismissed] = useState(false);
 
   useEffect(() => {
      db.getGlobalAppConfig().then(cfg => {
          setAppConfig(cfg);
      });
+     // Load dismiss state from session storage
+     const dismissed = sessionStorage.getItem('noticeDismissed');
+     if (dismissed === 'true') {
+         setIsNoticeDismissed(true);
+     }
   }, []);
+
+  const handleDismissNotice = () => {
+     setIsNoticeDismissed(true);
+     sessionStorage.setItem('noticeDismissed', 'true');
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -52,10 +63,17 @@ export default function MainLayout() {
       </div>
 
       {/* Global App Download & Notice Widget */}
-      {(appConfig.appDownloadLink || appConfig.globalNotice) && (
-          <div className="fixed bottom-4 right-4 max-w-sm w-full bg-white border shadow-xl rounded-lg overflow-hidden z-50 print:hidden flex flex-col">
+      {!isNoticeDismissed && (appConfig.appDownloadLink || appConfig.globalNotice) && (
+          <div className="fixed bottom-4 right-4 left-4 md:left-auto md:w-full md:max-w-sm bg-white border shadow-xl rounded-lg overflow-hidden z-50 print:hidden flex flex-col">
+              <button
+                  onClick={handleDismissNotice}
+                  className="absolute top-2 right-2 p-1 bg-black/10 hover:bg-black/20 rounded-full text-white transition-colors z-10"
+                  aria-label="Dismiss notice"
+              >
+                  <X className="h-4 w-4" />
+              </button>
               {appConfig.appDownloadLink && (
-                  <a href={appConfig.appDownloadLink} target="_blank" rel="noreferrer" className="block bg-blue-600 hover:bg-blue-700 text-white font-bold text-center py-3 flex items-center justify-center gap-2 transition-colors">
+                  <a href={appConfig.appDownloadLink} target="_blank" rel="noreferrer" className="block bg-blue-600 hover:bg-blue-700 text-white font-bold text-center py-3 flex items-center justify-center gap-2 transition-colors pr-8">
                       <DownloadCloud className="h-5 w-5" /> Download Our App
                   </a>
               )}
