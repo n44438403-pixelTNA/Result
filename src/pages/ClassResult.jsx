@@ -242,29 +242,78 @@ export default function ClassResult() {
                 <p className="text-lg text-gray-600">Session: {session} | Class: {classId}</p>
             </div>
 
-            <Table className="min-w-max">
+            <Table className="min-w-max border-collapse border border-gray-200">
                 <TableHeader>
+                {/* Level 1 Headers: Exams */}
                 <TableRow>
-                    <TableHead className="w-16 sticky left-0 bg-white z-10 border-r">Roll</TableHead>
-                    <TableHead className="w-48 sticky left-16 bg-white z-10 border-r">Name</TableHead>
+                    <TableHead rowSpan={3} className="w-16 sticky left-0 bg-gray-100 z-30 border align-bottom text-center">Roll</TableHead>
+                    <TableHead rowSpan={3} className="w-48 sticky left-16 bg-gray-100 z-30 border align-bottom text-center">Student Name</TableHead>
 
-                    {exams.map(exam => (
-                    <TableHead key={exam} className="text-center border-r min-w-[100px]">
-                        <div className="font-bold">{exam}</div>
-                    </TableHead>
-                    ))}
+                    {exams.map(exam => {
+                        const examConfig = examConfigs[exam];
+                        // Calculate total number of tests in this exam across all subjects
+                        let totalTestsInExam = 0;
+                        if (examConfig?.subjectGroups) {
+                            examConfig.subjectGroups.forEach(g => {
+                                totalTestsInExam += g.tests.length;
+                            });
+                        }
+                        if (totalTestsInExam === 0) totalTestsInExam = 1; // Fallback if empty config
 
-                    <TableHead className="w-24 text-center font-bold border-l bg-gray-50">Grand Total</TableHead>
-                    <TableHead className="w-20 text-center font-bold bg-gray-50">%</TableHead>
-                    <TableHead className="w-16 text-center font-bold bg-gray-50 border-r">Grade</TableHead>
-                    <TableHead className="w-16 text-center font-bold bg-blue-50 text-blue-800 border-r">Rank</TableHead>
-                    <TableHead className="w-24 text-center print:hidden">Action</TableHead>
+                        return (
+                            <TableHead key={exam} colSpan={totalTestsInExam} className="text-center border-r border-b border-gray-300 font-black text-gray-800 bg-gray-50 uppercase tracking-wider py-3">
+                                {exam}
+                            </TableHead>
+                        );
+                    })}
+
+                    <TableHead rowSpan={3} className="w-24 text-center font-bold border bg-gray-100 align-bottom">Grand Total</TableHead>
+                    <TableHead rowSpan={3} className="w-20 text-center font-bold border bg-gray-100 align-bottom">%</TableHead>
+                    <TableHead rowSpan={3} className="w-16 text-center font-bold border bg-gray-100 align-bottom">Grade</TableHead>
+                    <TableHead rowSpan={3} className="w-16 text-center font-bold bg-blue-100 text-blue-900 border align-bottom">Class Rank</TableHead>
+                    <TableHead rowSpan={3} className="w-24 text-center print:hidden bg-gray-100 border align-bottom">Actions</TableHead>
+                </TableRow>
+
+                {/* Level 2 Headers: Subjects */}
+                <TableRow>
+                    {exams.map(exam => {
+                        const examConfig = examConfigs[exam];
+                        if (!examConfig?.subjectGroups || examConfig.subjectGroups.length === 0) {
+                            return <TableHead key={`empty-sub-${exam}`} className="border-r border-b bg-white">-</TableHead>;
+                        }
+                        return examConfig.subjectGroups.map((group, gIdx) => {
+                            if (!group.tests || group.tests.length === 0) return null;
+                            return (
+                                <TableHead key={`${exam}-sub-${gIdx}`} colSpan={group.tests.length} className="text-center border-r border-b font-bold bg-indigo-50/50 text-indigo-900">
+                                    {group.subjectName}
+                                </TableHead>
+                            );
+                        });
+                    })}
+                </TableRow>
+
+                {/* Level 3 Headers: Tests */}
+                <TableRow>
+                    {exams.map(exam => {
+                        const examConfig = examConfigs[exam];
+                        if (!examConfig?.subjectGroups || examConfig.subjectGroups.length === 0) {
+                            return <TableHead key={`empty-test-${exam}`} className="border-r bg-white">-</TableHead>;
+                        }
+                        return examConfig.subjectGroups.map(group => {
+                            return (group.tests || []).map(test => (
+                                <TableHead key={`${exam}-${test.id}`} className="min-w-[120px] text-center border-r bg-white align-top pt-2">
+                                    <div className="font-semibold text-gray-700 leading-tight">{test.name}</div>
+                                    <div className="text-[10px] text-blue-600 font-bold mt-1">Max: {test.maxMarks}</div>
+                                </TableHead>
+                            ));
+                        });
+                    })}
                 </TableRow>
                 </TableHeader>
                 <TableBody>
                 {filteredStudents.length === 0 && (
                    <TableRow>
-                      <TableCell colSpan={10} className="text-center py-8 text-gray-500">No students found matching your search.</TableCell>
+                      <TableCell colSpan={100} className="text-center py-8 text-gray-500">No students found matching your search.</TableCell>
                    </TableRow>
                 )}
                 {filteredStudents.map((student) => {
@@ -279,28 +328,45 @@ export default function ClassResult() {
                     };
 
                     return (
-                        <TableRow key={student.rollNo} className={`hover:bg-gray-50/50 ${student.rank === 1 ? 'bg-yellow-50/30' : ''} ${student.rank === 2 ? 'bg-gray-50/80' : ''} ${student.rank === 3 ? 'bg-orange-50/30' : ''}`}>
-                        <TableCell className="text-center sticky left-0 bg-white z-10 border-r font-medium">
+                        <TableRow key={student.rollNo} className={`hover:bg-gray-50/80 transition-colors ${student.rank === 1 ? 'bg-yellow-50/40' : ''} ${student.rank === 2 ? 'bg-gray-50' : ''} ${student.rank === 3 ? 'bg-orange-50/40' : ''}`}>
+                        <TableCell className="text-center sticky left-0 bg-white z-20 border font-bold text-gray-700 shadow-[2px_0_5px_rgba(0,0,0,0.05)]">
                             {student.rollNo}
                         </TableCell>
-                        <TableCell className="sticky left-16 bg-white z-10 border-r font-medium text-gray-900">
+                        <TableCell className="sticky left-16 bg-white z-20 border font-bold text-gray-900 shadow-[2px_0_5px_rgba(0,0,0,0.05)] whitespace-nowrap">
                             {student.name || 'Unnamed Student'}
                         </TableCell>
 
                         {exams.map(exam => {
-                            const result = student.examTotals[exam];
-                            if (!result) return <TableCell key={exam} className="text-center border-r text-gray-400">-</TableCell>;
-                            return (
-                                <TableCell key={exam} className="text-center border-r">
-                                    <div className="font-medium">{result.obtained}</div>
-                                    <div className="text-[10px] text-gray-500">/ {result.max}</div>
-                                </TableCell>
-                            );
+                            const examConfig = examConfigs[exam];
+                            const studentExamData = student.examDetails[exam];
+
+                            if (!examConfig?.subjectGroups || examConfig.subjectGroups.length === 0) {
+                                return <TableCell key={`empty-mark-${exam}`} className="text-center border-r text-gray-300">-</TableCell>;
+                            }
+
+                            return examConfig.subjectGroups.map(group => {
+                                return (group.tests || []).map(test => {
+                                    // Extract marks dynamically from the stored exam details for this specific student and test
+                                    const marks = studentExamData?.marks?.[test.id];
+                                    const hasMarks = marks !== undefined && marks !== '';
+                                    const max = parseInt(test.maxMarks) || 0;
+                                    const val = hasMarks ? parseInt(marks) : null;
+                                    const isFail = val !== null && max > 0 && (val / max) < 0.4; // Highlight fails in red text
+
+                                    return (
+                                        <TableCell key={`${exam}-${test.id}`} className="text-center border-r border-b border-gray-200">
+                                            <span className={`text-base font-medium ${isFail ? 'text-red-600 font-bold' : 'text-gray-800'}`}>
+                                                {hasMarks ? marks : <span className="text-gray-300">-</span>}
+                                            </span>
+                                        </TableCell>
+                                    );
+                                });
+                            });
                         })}
 
-                        <TableCell className="text-center font-bold text-blue-700 border-l bg-gray-50">
+                        <TableCell className="text-center font-black text-indigo-700 border bg-indigo-50/30">
                             {student.grandObtained}
-                            <span className="text-xs text-gray-400 block font-normal">/ {student.grandMax}</span>
+                            <span className="text-xs text-indigo-400 font-bold block">/ {student.grandMax}</span>
                         </TableCell>
                         <TableCell className="text-center font-bold bg-gray-50">
                             {perc}%
