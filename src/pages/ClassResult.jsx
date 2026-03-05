@@ -158,11 +158,36 @@ export default function ClassResult() {
       setIsGraphOpen(true);
   };
 
+  const getGrade = (percentage) => {
+      if (percentage >= 90) return 'A+';
+      if (percentage >= 80) return 'A';
+      if (percentage >= 70) return 'B+';
+      if (percentage >= 60) return 'B';
+      if (percentage >= 50) return 'C';
+      if (percentage >= 40) return 'D';
+      return 'F';
+  };
+
   if (loading) return <div className="p-8 text-center text-gray-500">Loading Aggregate Results...</div>;
+
+  // Apply live search filtering
+  const filteredStudents = aggregatedStudents.filter(s => {
+      if (!searchQuery) return true;
+      const q = searchQuery.toLowerCase();
+      return (s.name && s.name.toLowerCase().includes(q)) ||
+             (s.rollNo && s.rollNo.toString().includes(q));
+  });
+
+  // Calculate Summary Stats
+  const totalStudents = aggregatedStudents.length;
+  const classAvgPerc = totalStudents > 0
+      ? (aggregatedStudents.reduce((acc, s) => acc + (s.grandMax > 0 ? (s.grandObtained / s.grandMax) * 100 : 0), 0) / totalStudents).toFixed(2)
+      : 0;
+  const highestScore = totalStudents > 0 ? Math.max(...aggregatedStudents.map(s => s.grandObtained)) : 0;
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between print:hidden">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 print:hidden">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate('/browse')}>
             <ArrowLeft className="h-5 w-5" />
@@ -172,11 +197,34 @@ export default function ClassResult() {
              <p className="text-gray-500 text-sm">{session} / {classId}</p>
           </div>
         </div>
-        <div>
-           <Button variant="outline" onClick={() => window.print()}>
-               <Printer className="mr-2 h-4 w-4" /> Print Results
-           </Button>
+        <div className="flex items-center gap-2">
+            <Search className="h-5 w-5 text-gray-400 hidden md:block" />
+            <Input
+                placeholder="Filter by Name or Roll No..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full md:w-64"
+            />
+            <Button variant="outline" onClick={() => window.print()} className="ml-2">
+                <Printer className="mr-2 h-4 w-4" /> Print
+            </Button>
         </div>
+      </div>
+
+      {/* Summary Dashboard */}
+      <div className="grid grid-cols-3 gap-4 mb-2 print:hidden">
+         <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center">
+            <span className="text-sm text-gray-500 font-medium">Total Students</span>
+            <span className="text-2xl font-bold text-gray-800">{totalStudents}</span>
+         </div>
+         <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center">
+            <span className="text-sm text-gray-500 font-medium">Class Average</span>
+            <span className="text-2xl font-bold text-blue-600">{classAvgPerc}%</span>
+         </div>
+         <div className="bg-white p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center">
+            <span className="text-sm text-gray-500 font-medium">Highest Score</span>
+            <span className="text-2xl font-bold text-green-600">{highestScore}</span>
+         </div>
       </div>
 
       {exams.length === 0 ? (
@@ -206,13 +254,19 @@ export default function ClassResult() {
                     ))}
 
                     <TableHead className="w-24 text-center font-bold border-l bg-gray-50">Grand Total</TableHead>
-                    <TableHead className="w-20 text-center font-bold bg-gray-50 border-r">%</TableHead>
+                    <TableHead className="w-20 text-center font-bold bg-gray-50">%</TableHead>
+                    <TableHead className="w-16 text-center font-bold bg-gray-50 border-r">Grade</TableHead>
                     <TableHead className="w-16 text-center font-bold bg-blue-50 text-blue-800 border-r">Rank</TableHead>
                     <TableHead className="w-24 text-center print:hidden">Action</TableHead>
                 </TableRow>
                 </TableHeader>
                 <TableBody>
-                {aggregatedStudents.map((student) => {
+                {filteredStudents.length === 0 && (
+                   <TableRow>
+                      <TableCell colSpan={10} className="text-center py-8 text-gray-500">No students found matching your search.</TableCell>
+                   </TableRow>
+                )}
+                {filteredStudents.map((student) => {
                     const perc = student.grandMax > 0 ? ((student.grandObtained / student.grandMax) * 100).toFixed(2) : 0;
 
                     const getRankBadge = (rank) => {
@@ -247,8 +301,11 @@ export default function ClassResult() {
                             {student.grandObtained}
                             <span className="text-xs text-gray-400 block font-normal">/ {student.grandMax}</span>
                         </TableCell>
-                        <TableCell className="text-center font-bold bg-gray-50 border-r">
+                        <TableCell className="text-center font-bold bg-gray-50">
                             {perc}%
+                        </TableCell>
+                        <TableCell className={`text-center font-bold border-r ${perc >= 90 ? 'text-green-600' : perc >= 70 ? 'text-blue-600' : perc >= 50 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            {getGrade(perc)}
                         </TableCell>
                         <TableCell className="text-center font-black text-blue-800 bg-blue-50/50 border-r">
                             {getRankBadge(student.rank)}
