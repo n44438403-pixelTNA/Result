@@ -24,6 +24,8 @@ export default function ClassResult() {
   const [isGraphOpen, setIsGraphOpen] = useState(false);
   const [graphData, setGraphData] = useState({});
 
+  const [searchQuery, setSearchQuery] = useState('');
+
   useEffect(() => {
     const loadData = async () => {
       setLoading(true);
