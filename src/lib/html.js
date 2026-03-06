@@ -91,6 +91,9 @@ export function generateHTML(htmlContent, title) {
     "<body>",
     "<div class='container'>",
     htmlContent,
+    "<div style='margin-top: 40px; text-align: center; font-size: 10px; color: #9ca3af; font-family: sans-serif; font-weight: 500; border-top: 1px solid #e5e7eb; padding-top: 10px;'>",
+    "Developed by Nadim Anwar",
+    "</div>",
     "</div>",
     "</body>",
     "</html>"
