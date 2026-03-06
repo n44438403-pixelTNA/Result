@@ -84,7 +84,7 @@ export function generateHTML(htmlContent, title) {
     "h1, h2, h3, h4, h5, h6 { font-family: 'Times New Roman', Times, serif; color: #111827; }",
     "h1 { font-size: 2.25rem; font-weight: 900; margin-bottom: 0.5rem; color: #1e3a8a; }",
     "p { margin: 5px 0; line-height: 1.5; }",
-    ".container { width: max-content; min-width: 100%; box-sizing: border-box; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }",
+    ".container { width: fit-content; min-width: 100%; box-sizing: border-box; margin: 0 auto; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); }",
     "@media print { @page { size: landscape; } body { background: white; } .container { box-shadow: none; border: none; padding: 0; width: 100%; min-width: auto; } }",
     "</style>",
     "</head>",
