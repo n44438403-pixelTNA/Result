@@ -64,8 +64,13 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
              }
 
              (group.tests || []).forEach(test => {
-                 subMap[group.subjectName].obtained += parseInt(marks?.[test.id]) || 0;
-                 subMap[group.subjectName].max += parseInt(test.maxMarks) || 0;
+                 const mark = marks?.[test.id];
+                 if (mark !== 'X') {
+                     subMap[group.subjectName].max += parseInt(test.maxMarks) || 0;
+                 }
+                 if (mark !== 'A' && mark !== 'X' && mark !== undefined && mark !== '') {
+                     subMap[group.subjectName].obtained += parseInt(mark) || 0;
+                 }
              });
          });
      });
@@ -211,11 +216,32 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
                 {subjectGroups.map((group, gIdx) => (
                     <React.Fragment key={gIdx}>
                         {group.tests.map((test, tIdx) => {
-                            const obt = parseInt(marks?.[test.id]) || 0;
+                            const markRaw = marks?.[test.id];
                             const max = parseInt(test.maxMarks) || 0;
-                            examObtained += obt;
-                            examMax += max;
-                            const perc = max > 0 ? ((obt / max) * 100).toFixed(2) : 0;
+
+                            let obtDisp = markRaw;
+                            if (markRaw === 'A') {
+                                obtDisp = <span className="text-red-600 font-bold">A</span>;
+                            } else if (markRaw === 'X') {
+                                obtDisp = <span className="text-gray-500 font-bold">X</span>;
+                            } else if (!markRaw) {
+                                obtDisp = '-';
+                            }
+
+                            if (markRaw !== 'X') {
+                                examMax += max;
+                            }
+
+                            let obtVal = 0;
+                            let perc = '-';
+
+                            if (markRaw === 'A') {
+                                perc = '0.00';
+                            } else if (markRaw !== 'X' && markRaw !== undefined && markRaw !== '') {
+                                obtVal = parseInt(markRaw) || 0;
+                                examObtained += obtVal;
+                                perc = max > 0 ? ((obtVal / max) * 100).toFixed(2) : '0.00';
+                            }
 
                             return (
                                 <TableRow key={test.id} className={tIdx === group.tests.length - 1 ? 'border-b-2' : ''}>
@@ -225,9 +251,9 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
                                         </TableCell>
                                     )}
                                     <TableCell className="font-medium">{test.name || test.id}</TableCell>
-                                    <TableCell className="text-right">{max}</TableCell>
-                                    <TableCell className="text-right">{obt}</TableCell>
-                                    <TableCell className="text-right">{perc}%</TableCell>
+                                    <TableCell className="text-right">{markRaw === 'X' ? '-' : max}</TableCell>
+                                    <TableCell className="text-right">{obtDisp}</TableCell>
+                                    <TableCell className="text-right">{perc}{perc !== '-' ? '%' : ''}</TableCell>
                                 </TableRow>
                             );
                         })}

@@ -65,14 +65,6 @@ export default function ClassResult() {
 
             configsMap[examId] = finalConfig;
 
-            // Calculate max marks for this exam
-            let examMaxMarks = 0;
-            (finalConfig.subjectGroups || []).forEach(group => {
-                (group.tests || []).forEach(test => {
-                    examMaxMarks += parseInt(test.maxMarks) || 0;
-                });
-            });
-
             // Process students
             (stuList || []).forEach(student => {
                 if (!studentsMap[student.rollNo]) {
@@ -89,17 +81,36 @@ export default function ClassResult() {
                 // Update name to latest known
                 if (student.name) studentsMap[student.rollNo].name = student.name;
 
-                // Calculate obtained for this exam
+                // Calculate obtained and max marks for this exam specifically for this student
                 let examObtained = 0;
+                let examMaxMarksForStudent = 0;
+                let examTotalTests = 0;
+                let examAbsent = 0;
+                let examClosed = 0;
+
                 (finalConfig.subjectGroups || []).forEach(group => {
                     (group.tests || []).forEach(test => {
-                        examObtained += parseInt(student.marks?.[test.id]) || 0;
+                        examTotalTests++;
+                        const mark = student.marks?.[test.id];
+                        // If class was closed (X), exclude test from max marks calculation
+                        if (mark !== 'X') {
+                            examMaxMarksForStudent += parseInt(test.maxMarks) || 0;
+                        } else {
+                            examClosed++;
+                        }
+
+                        // Treat 'A' and 'X' as 0 marks obtained, otherwise parse
+                        if (mark === 'A') {
+                            examAbsent++;
+                        } else if (mark !== 'A' && mark !== 'X' && mark !== undefined && mark !== '') {
+                            examObtained += parseInt(mark) || 0;
+                        }
                     });
                 });
 
                 studentsMap[student.rollNo].examTotals[examId] = {
                     obtained: examObtained,
-                    max: examMaxMarks
+                    max: examMaxMarksForStudent
                 };
 
                 studentsMap[student.rollNo].examDetails[examId] = {
@@ -108,7 +119,12 @@ export default function ClassResult() {
                 };
 
                 studentsMap[student.rollNo].grandObtained += examObtained;
-                studentsMap[student.rollNo].grandMax += examMaxMarks;
+                studentsMap[student.rollNo].grandMax += examMaxMarksForStudent;
+
+                // Track total attendance
+                studentsMap[student.rollNo].totalTests = (studentsMap[student.rollNo].totalTests || 0) + examTotalTests;
+                studentsMap[student.rollNo].totalAbsent = (studentsMap[student.rollNo].totalAbsent || 0) + examAbsent;
+                studentsMap[student.rollNo].totalClosed = (studentsMap[student.rollNo].totalClosed || 0) + examClosed;
             });
         }
 
@@ -280,6 +296,7 @@ export default function ClassResult() {
                         );
                     })}
 
+                    <TableHead colSpan={3} className="text-center border font-bold text-purple-800 bg-purple-50 align-middle">Overall Attendance</TableHead>
                     <TableHead rowSpan={3} className="w-24 text-center font-bold border bg-gray-100 align-bottom">Grand Total</TableHead>
                     <TableHead rowSpan={3} className="w-20 text-center font-bold border bg-gray-100 align-bottom">%</TableHead>
                     <TableHead rowSpan={3} className="w-16 text-center font-bold border bg-gray-100 align-bottom">Grade</TableHead>
@@ -303,6 +320,9 @@ export default function ClassResult() {
                             );
                         });
                     })}
+                    <TableHead rowSpan={2} className="w-16 border-r align-bottom pb-2 text-center text-xs font-semibold bg-white text-purple-700">Present</TableHead>
+                    <TableHead rowSpan={2} className="w-16 border-r align-bottom pb-2 text-center text-xs font-semibold bg-white text-red-600">Absent</TableHead>
+                    <TableHead rowSpan={2} className="w-16 border-r align-bottom pb-2 text-center text-xs font-semibold bg-white text-gray-500">Closed</TableHead>
                 </TableRow>
 
                 {/* Level 3 Headers: Tests */}
@@ -365,12 +385,18 @@ export default function ClassResult() {
                                     const marks = studentExamData?.marks?.[test.id];
                                     const hasMarks = marks !== undefined && marks !== '';
                                     const max = parseInt(test.maxMarks) || 0;
-                                    const val = hasMarks ? parseInt(marks) : null;
-                                    const isFail = val !== null && max > 0 && (val / max) < 0.4; // Highlight fails in red text
+                                    let isFail = false;
+
+                                    if (marks === 'A') {
+                                        isFail = true; // Absent is considered failing visually
+                                    } else if (marks !== 'X' && hasMarks) {
+                                        const val = parseInt(marks);
+                                        isFail = !isNaN(val) && max > 0 && (val / max) < 0.4; // Highlight fails in red text
+                                    }
 
                                     return (
                                         <TableCell key={`${exam}-${test.id}`} className="text-center border-r border-b border-gray-200">
-                                            <span className={`text-base font-medium ${isFail ? 'text-red-600 font-bold' : 'text-gray-800'}`}>
+                                            <span className={`text-base font-medium ${marks === 'A' ? 'text-red-600 font-bold bg-red-50 px-1 rounded' : marks === 'X' ? 'text-gray-500 font-bold bg-gray-100 px-1 rounded' : isFail ? 'text-red-600 font-bold' : 'text-gray-800'}`}>
                                                 {hasMarks ? marks : <span className="text-gray-300">-</span>}
                                             </span>
                                         </TableCell>
@@ -378,6 +404,17 @@ export default function ClassResult() {
                                 });
                             });
                         })}
+
+                        {/* Attendance Columns */}
+                        <TableCell className="text-center font-semibold text-purple-700 border-l bg-purple-50/30">
+                           {(student.totalTests || 0) - (student.totalAbsent || 0) - (student.totalClosed || 0)}
+                        </TableCell>
+                        <TableCell className="text-center font-bold text-red-600 bg-red-50/30 border-l border-r">
+                           {student.totalAbsent || 0}
+                        </TableCell>
+                        <TableCell className="text-center font-semibold text-gray-500 bg-gray-50 border-r">
+                           {student.totalClosed || 0}
+                        </TableCell>
 
                         <TableCell className="text-center font-black text-indigo-700 border bg-indigo-50/30">
                             {student.grandObtained}

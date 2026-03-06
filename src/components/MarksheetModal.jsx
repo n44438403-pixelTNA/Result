@@ -20,6 +20,9 @@ export default function MarksheetModal({ student, config, isOpen, onClose, sessi
 
   let grandTotalObtained = 0;
   let grandTotalMax = 0;
+  let totalTests = 0;
+  let totalAbsent = 0;
+  let totalClosed = 0;
 
   const handlePrint = () => {
       window.print();
@@ -111,12 +114,34 @@ export default function MarksheetModal({ student, config, isOpen, onClose, sessi
               {subjectGroups.map((group, gIdx) => (
                 <React.Fragment key={`group-${gIdx}`}>
                   {group.tests.map((test, tIdx) => {
-                    const marks = parseInt(student.marks?.[test.id]) || 0;
+                    totalTests++;
+                    const markRaw = student.marks?.[test.id];
                     const max = parseInt(test.maxMarks) || 0;
-                    const perc = max > 0 ? ((marks / max) * 100).toFixed(2) : 0;
 
-                    grandTotalObtained += marks;
-                    grandTotalMax += max;
+                    let obtDisp = markRaw;
+                    if (markRaw === 'A') {
+                        totalAbsent++;
+                        obtDisp = <span className="text-red-600 font-bold">A</span>;
+                    } else if (markRaw === 'X') {
+                        totalClosed++;
+                        obtDisp = <span className="text-gray-500 font-bold">X</span>;
+                    } else if (!markRaw) {
+                        obtDisp = '-';
+                    }
+
+                    if (markRaw !== 'X') {
+                        grandTotalMax += max;
+                    }
+
+                    let marks = 0;
+                    let perc = '-';
+                    if (markRaw === 'A') {
+                        perc = '0.00';
+                    } else if (markRaw !== 'X' && markRaw !== undefined && markRaw !== '') {
+                        marks = parseInt(markRaw) || 0;
+                        grandTotalObtained += marks;
+                        perc = max > 0 ? ((marks / max) * 100).toFixed(2) : '0.00';
+                    }
 
                     return (
                       <TableRow key={`test-${test.id}`} className={tIdx === group.tests.length - 1 ? 'border-b-2' : ''}>
@@ -127,9 +152,9 @@ export default function MarksheetModal({ student, config, isOpen, onClose, sessi
                         )}
                         <TableCell className="font-medium">{test.name}</TableCell>
                         <TableCell className="text-sm text-gray-500">{test.date || '-'}</TableCell>
-                        <TableCell className="text-right">{max}</TableCell>
-                        <TableCell className="text-right">{marks}</TableCell>
-                        <TableCell className="text-right">{perc}%</TableCell>
+                        <TableCell className="text-right">{markRaw === 'X' ? '-' : max}</TableCell>
+                        <TableCell className="text-right">{obtDisp}</TableCell>
+                        <TableCell className="text-right">{perc}{perc !== '-' ? '%' : ''}</TableCell>
                       </TableRow>
                     );
                   })}
@@ -144,8 +169,25 @@ export default function MarksheetModal({ student, config, isOpen, onClose, sessi
             </TableBody>
           </Table>
 
+          {/* Attendance Summary */}
+          <div className="mt-6 flex flex-wrap gap-4 border-b pb-6">
+              <div className="flex-1 bg-purple-50 p-3 rounded border border-purple-100 text-center">
+                  <div className="text-xs font-bold text-purple-800 uppercase tracking-wide">Total Classes</div>
+                  <div className="text-xl font-black text-purple-900 mt-1">{totalTests - totalClosed}</div>
+                  <div className="text-[10px] text-purple-600">(Excl. Closed Days)</div>
+              </div>
+              <div className="flex-1 bg-green-50 p-3 rounded border border-green-100 text-center">
+                  <div className="text-xs font-bold text-green-800 uppercase tracking-wide">Days Present</div>
+                  <div className="text-xl font-black text-green-900 mt-1">{totalTests - totalClosed - totalAbsent}</div>
+              </div>
+              <div className="flex-1 bg-red-50 p-3 rounded border border-red-100 text-center">
+                  <div className="text-xs font-bold text-red-800 uppercase tracking-wide">Days Absent</div>
+                  <div className="text-xl font-black text-red-900 mt-1">{totalAbsent}</div>
+              </div>
+          </div>
+
           {/* Remarks Section */}
-          <div className="mt-8 p-4 bg-gray-50 border rounded-md relative z-10 print:bg-white print:border-gray-400">
+          <div className="mt-6 p-4 bg-gray-50 border rounded-md relative z-10 print:bg-white print:border-gray-400">
               <h3 className="text-sm font-bold text-gray-600 uppercase tracking-wider mb-1">Teacher's Remarks</h3>
               <p className="text-lg font-medium text-gray-800 italic">
                   {grandTotalMax > 0 ? getRemarks((grandTotalObtained / grandTotalMax) * 100) : "N/A"}

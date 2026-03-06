@@ -120,7 +120,20 @@ export default function ExamResults() {
   const handleMarkChange = (index, testId, value) => {
     const updated = [...students];
     if (!updated[index].marks) updated[index].marks = {};
-    updated[index].marks = { ...updated[index].marks, [testId]: value === '' ? '' : parseInt(value) };
+
+    // Allow special strings like 'A' (Absent) or 'X' (Class Closed), otherwise parse integer
+    let parsedValue = value;
+    if (value !== '') {
+        const upperVal = value.toUpperCase();
+        if (upperVal === 'A' || upperVal === 'X') {
+            parsedValue = upperVal;
+        } else {
+            const intVal = parseInt(value);
+            parsedValue = isNaN(intVal) ? '' : intVal;
+        }
+    }
+
+    updated[index].marks = { ...updated[index].marks, [testId]: parsedValue };
     setStudents(updated);
   };
 
@@ -153,26 +166,58 @@ export default function ExamResults() {
     let sum = 0;
     config.subjectGroups.forEach(group => {
         group.tests.forEach(test => {
-            sum += (parseInt(student.marks[test.id]) || 0);
+            const mark = student.marks[test.id];
+            if (mark !== 'A' && mark !== 'X') {
+               sum += (parseInt(mark) || 0);
+            }
         });
     });
     return sum;
   };
 
-  const calculateTotalMax = () => {
+  const calculateTotalMax = (student) => {
       if (!config?.subjectGroups) return 0;
       let sum = 0;
       config.subjectGroups.forEach(group => {
           group.tests.forEach(test => {
-              sum += (parseInt(test.maxMarks) || 0);
+              const mark = student?.marks?.[test.id];
+              // Exclude test from max if class was closed (X) for this student/day
+              if (mark !== 'X') {
+                  sum += (parseInt(test.maxMarks) || 0);
+              }
           });
       });
       return sum;
   };
 
+  const getAttendanceStats = (student) => {
+      if (!config?.subjectGroups) return { total: 0, present: 0, absent: 0, closed: 0 };
+
+      let totalTests = 0;
+      let absent = 0;
+      let closed = 0;
+
+      config.subjectGroups.forEach(group => {
+          group.tests.forEach(test => {
+              totalTests++;
+              const mark = student?.marks?.[test.id];
+              if (mark === 'A') {
+                  absent++;
+              } else if (mark === 'X') {
+                  closed++;
+              }
+          });
+      });
+
+      // Present is total tests minus absent minus closed days
+      const present = totalTests - absent - closed;
+
+      return { total: totalTests, present, absent, closed };
+  };
+
   const calculatePercentage = (student) => {
       const obtained = calculateTotalObtained(student);
-      const max = calculateTotalMax();
+      const max = calculateTotalMax(student);
       return max > 0 ? ((obtained / max) * 100).toFixed(2) : 0;
   };
 
@@ -410,6 +455,7 @@ export default function ExamResults() {
                      </TableHead>
                    )
                 ))}
+                <TableHead colSpan={3} className="text-center font-bold border-l border-b bg-purple-50 text-purple-800">Attendance</TableHead>
                 <TableHead rowSpan={2} className="w-24 text-center font-bold border-l bg-gray-50 align-bottom pb-4">Total</TableHead>
                 <TableHead rowSpan={2} className="w-20 text-center font-bold bg-gray-50 align-bottom pb-4">%</TableHead>
                 <TableHead rowSpan={2} className="w-16 text-center font-bold bg-gray-50 border-r align-bottom pb-4">Grade</TableHead>
@@ -423,9 +469,17 @@ export default function ExamResults() {
                       <div className="font-semibold text-gray-700">{test.name}</div>
                       <div className="text-xs text-gray-500">{test.date || 'No date'}</div>
                       <div className="text-xs text-blue-600">Full: {test.maxMarks}</div>
+                      {test.closedReason && (
+                          <div className="text-[10px] text-red-500 font-medium mt-1 bg-red-50 px-1 rounded inline-block truncate max-w-full" title={test.closedReason}>
+                              {test.closedReason}
+                          </div>
+                      )}
                     </TableHead>
                   ))
                 ))}
+                <TableHead className="w-16 text-center text-xs font-semibold bg-white border-l border-r text-purple-700">Present</TableHead>
+                <TableHead className="w-16 text-center text-xs font-semibold bg-white border-r text-red-600">Absent</TableHead>
+                <TableHead className="w-16 text-center text-xs font-semibold bg-white border-r text-gray-500" title="Class Closed">Closed</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -496,32 +550,53 @@ export default function ExamResults() {
                     group.tests.map(test => {
                       const marks = student.marks?.[test.id] ?? '';
                       const max = parseInt(test.maxMarks) || 0;
-                      const perc = (marks !== '' && max > 0) ? ((parseInt(marks) / max) * 100).toFixed(0) : '-';
+                      let perc = '-';
+                      if (marks === 'A') {
+                          perc = '0';
+                      } else if (marks === 'X') {
+                          perc = '-';
+                      } else if (marks !== '' && max > 0) {
+                          perc = ((parseInt(marks) / max) * 100).toFixed(0);
+                      }
 
                       return (
                         <TableCell key={test.id} className="text-center p-2 border-r">
                           <div className="flex flex-col items-center gap-1">
                               {user ? (
                               <Input
-                                  type="number"
+                                  type="text"
                                   value={marks}
                                   onChange={(e) => handleMarkChange(index, test.id, e.target.value)}
-                                  className="h-8 w-20 text-center"
+                                  className={`h-8 w-20 text-center ${marks === 'A' ? 'text-red-500 font-bold bg-red-50' : marks === 'X' ? 'text-gray-500 font-bold bg-gray-100' : ''}`}
                                   placeholder="-"
+                                  title="Enter marks, 'A' for Absent, 'X' for Class Closed"
                               />
                               ) : (
-                              <span className="text-base">{marks !== '' ? marks : '-'}</span>
+                              <span className={`text-base ${marks === 'A' ? 'text-red-500 font-bold' : marks === 'X' ? 'text-gray-500 font-bold' : ''}`}>
+                                  {marks !== '' ? marks : '-'}
+                              </span>
                               )}
-                              <span className="text-[10px] text-gray-500 font-medium bg-gray-100 px-1.5 rounded">{perc}%</span>
+                              <span className="text-[10px] text-gray-500 font-medium bg-gray-100 px-1.5 rounded">{perc}{perc !== '-' ? '%' : ''}</span>
                           </div>
                         </TableCell>
                       );
                     })
                   ))}
 
+                  {/* Attendance Columns */}
+                  <TableCell className="text-center font-semibold text-purple-700 border-l bg-purple-50/30">
+                     {getAttendanceStats(student).present}
+                  </TableCell>
+                  <TableCell className="text-center font-bold text-red-600 bg-red-50/30 border-l border-r">
+                     {getAttendanceStats(student).absent}
+                  </TableCell>
+                  <TableCell className="text-center font-semibold text-gray-500 bg-gray-50 border-r">
+                     {getAttendanceStats(student).closed}
+                  </TableCell>
+
                   <TableCell className="text-center font-bold text-blue-600 border-l bg-gray-50">
                     {calculateTotalObtained(student)}
-                    <span className="text-xs text-gray-400 block font-normal">/ {calculateTotalMax()}</span>
+                    <span className="text-xs text-gray-400 block font-normal">/ {calculateTotalMax(student)}</span>
                   </TableCell>
                   <TableCell className="text-center font-bold bg-gray-50">
                     {perc}%
