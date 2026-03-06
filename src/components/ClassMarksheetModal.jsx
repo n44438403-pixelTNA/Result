@@ -3,43 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from './ui/Button';
 import { Download, Printer, X, FileText, LayoutList } from 'lucide-react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './ui/Table';
-
-// Helper to generate MHTML
-function generateMHTML(htmlContent, title) {
-  const mhtml = [
-    "MIME-Version: 1.0",
-    `Content-Type: multipart/related; boundary="----MultipartBoundary--"`,
-    "",
-    "------MultipartBoundary--",
-    "Content-Type: text/html; charset=UTF-8",
-    "Content-Transfer-Encoding: quoted-printable",
-    "",
-    "<!DOCTYPE html>",
-    "<html>",
-    "<head>",
-    `<title>${title}</title>`,
-    "<style>",
-    "body { font-family: sans-serif; padding: 20px; }",
-    "table { width: 100%; border-collapse: collapse; margin-top: 20px; }",
-    "th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }",
-    "th { background-color: #f2f2f2; }",
-    ".text-right { text-align: right; }",
-    ".font-bold { font-weight: bold; }",
-    ".text-center { text-align: center; }",
-    ".bg-gray-50 { background-color: #f9fafb; }",
-    ".bg-blue-50 { background-color: #eff6ff; }",
-    "</style>",
-    "</head>",
-    "<body>",
-    htmlContent,
-    "</body>",
-    "</html>",
-    "",
-    "------MultipartBoundary----"
-  ].join("\r\n");
-
-  return mhtml;
-}
+import { generateHTML, downloadHTML } from '../lib/html';
 
 export default function ClassMarksheetModal({ student, exams, isOpen, onClose, allStudents, sessionDetails }) {
   const printRef = useRef(null);
@@ -89,18 +53,11 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
   const address = sessionDetails?.address || '';
 
 
-  const handleDownloadMHTML = () => {
+  const handleDownloadHTML = () => {
     if (!printRef.current) return;
     const htmlContent = printRef.current.innerHTML;
-    const mhtml = generateMHTML(htmlContent, `${student.name}_Marksheet_${viewMode}`);
-
-    const blob = new Blob([mhtml], { type: 'message/rfc822' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${student.name}_Marksheet_${viewMode}.mhtml`;
-    a.click();
-    URL.revokeObjectURL(url);
+    const html = generateHTML(htmlContent, `${student.name}_Marksheet_${viewMode}`);
+    downloadHTML(html, `${student.name}_Marksheet_${viewMode}.html`);
   };
 
   const handlePrint = () => {
@@ -356,7 +313,7 @@ export default function ClassMarksheetModal({ student, exams, isOpen, onClose, a
               <Button variant="outline" size="sm" onClick={handlePrint}>
                 <Printer className="h-4 w-4 mr-2" /> Print
               </Button>
-              <Button variant="outline" size="sm" onClick={handleDownloadMHTML}>
+              <Button variant="outline" size="sm" onClick={handleDownloadHTML}>
                 <Download className="h-4 w-4 mr-2" /> Download
               </Button>
             </div>

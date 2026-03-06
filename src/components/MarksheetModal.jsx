@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from './ui/Button';
 import { Download, Printer, X } from 'lucide-react';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from './ui/Table';
+import { generateHTML, downloadHTML } from '../lib/html';
 
 export default function MarksheetModal({ student, config, isOpen, onClose, sessionDetails }) {
   const printRef = useRef(null);
@@ -23,6 +24,13 @@ export default function MarksheetModal({ student, config, isOpen, onClose, sessi
   let totalTests = 0;
   let totalAbsent = 0;
   let totalClosed = 0;
+
+  const handleDownloadHTML = () => {
+    if (!printRef.current) return;
+    const htmlContent = printRef.current.innerHTML;
+    const html = generateHTML(htmlContent, `${student.name}_Marksheet`);
+    downloadHTML(html, `${student.name}_Marksheet.html`);
+  };
 
   const handlePrint = () => {
       window.print();
@@ -93,6 +101,9 @@ export default function MarksheetModal({ student, config, isOpen, onClose, sessi
               <p className="text-lg text-gray-700 mt-1">Name: <span className="font-bold text-gray-900">{student.name || 'N/A'}</span> <span className="text-gray-400 mx-2">|</span> Roll No: <span className="font-bold text-gray-900">{student.rollNo}</span></p>
             </div>
             <div className="flex gap-2 print:hidden">
+              <Button variant="outline" size="sm" onClick={handleDownloadHTML}>
+                <Download className="h-4 w-4 mr-2" /> Download
+              </Button>
               <Button variant="outline" size="sm" onClick={handlePrint}>
                 <Printer className="h-4 w-4 mr-2" /> Print
               </Button>

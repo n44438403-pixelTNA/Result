@@ -4,6 +4,7 @@ import { Button } from './ui/Button';
 import { Download, Printer, X } from 'lucide-react';
 
 import { LayoutList } from 'lucide-react';
+import { generateHTML, downloadHTML } from '../lib/html';
 
 export default function StudentGraphModal({ student, datasets, isOpen, onClose, title, sessionDetails }) {
   const printRef = useRef(null);
@@ -126,6 +127,14 @@ export default function StudentGraphModal({ student, datasets, isOpen, onClose, 
         </DialogHeader>
 
         <div className="flex gap-2 mb-4 justify-end print:hidden max-w-[297mm] mx-auto pt-4">
+            <Button variant="outline" size="sm" onClick={() => {
+                if (!printRef.current) return;
+                const htmlContent = printRef.current.innerHTML;
+                const html = generateHTML(htmlContent, `${student.name}_Graph`);
+                downloadHTML(html, `${student.name}_Graph.html`);
+            }} className="bg-white">
+               <Download className="h-4 w-4 mr-2" /> Download
+            </Button>
             <Button variant="outline" size="sm" onClick={() => window.print()} className="bg-white">
                <Printer className="h-4 w-4 mr-2" /> Print
             </Button>
