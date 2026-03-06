@@ -165,6 +165,15 @@ export default function ExamParams({ config, onSave }) {
                                     className="h-9"
                                 />
                                 </div>
+                                <div className="w-full sm:w-48">
+                                <label className="block text-xs font-medium mb-1 text-gray-500" title="Visible if any student has 'X'">Class Closed Reason</label>
+                                <Input
+                                    value={test.closedReason || ''}
+                                    onChange={(e) => updateTest(gIndex, test.id, 'closedReason', e.target.value)}
+                                    placeholder="e.g. Holiday, Rain"
+                                    className="h-9"
+                                />
+                                </div>
                                 <Button variant="ghost" size="icon" onClick={() => removeTest(gIndex, test.id)} className="text-red-500 hover:text-red-700 hover:bg-red-50 h-9 w-9 shrink-0">
                                 <Trash className="h-4 w-4" />
                                 </Button>
