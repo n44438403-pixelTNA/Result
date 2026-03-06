@@ -8,6 +8,7 @@ import { ArrowLeft, Printer, FileText, BarChart, Search, Maximize2, Minimize2 } 
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import ClassMarksheetModal from '../components/ClassMarksheetModal';
 import StudentGraphModal from '../components/StudentGraphModal';
+import { generateMHTML, downloadMHTML } from '../lib/mhtml';
 
 export default function ClassResult() {
   const { session, classId } = useParams();
@@ -186,6 +187,80 @@ export default function ClassResult() {
       return 'F';
   };
 
+  const handleDownloadFullClassReport = () => {
+      let html = `<div class="text-center mb-6">
+          <h1 class="text-3xl font-bold">${sessionDetails?.instituteName || 'Institute'}</h1>
+          <h2 class="text-xl font-semibold">Full Class Report: ${classId}</h2>
+          <p>Session: ${session}</p>
+      </div>`;
+
+      // Generate a distinct table for each exam
+      exams.forEach((examId, examIndex) => {
+          const examConfig = examConfigs[examId];
+          const subjectGroups = examConfig?.subjectGroups || [];
+
+          // Add a page break before every exam except the first one
+          if (examIndex > 0) {
+              html += `<div style="page-break-before: always; margin-top: 40px;"></div>`;
+          }
+
+          html += `<div class="mb-4 mt-8">
+              <h3 class="text-2xl font-bold text-blue-800 border-b-2 border-blue-800 pb-2">${examId}</h3>
+          </div>`;
+
+          html += `<table class="w-full mb-8">
+              <thead>
+                  <tr>
+                      <th class="w-16">Roll No</th>
+                      <th class="w-48">Name</th>`;
+
+          subjectGroups.forEach(group => {
+              group.tests.forEach(test => {
+                  html += `<th>${group.subjectName} - ${test.name} (Max: ${test.maxMarks})</th>`;
+              });
+          });
+
+          html += `       <th>Total Obtained</th>
+                      <th>Total Max</th>
+                      <th>Percentage</th>
+                  </tr>
+              </thead>
+              <tbody>`;
+
+          // Iterate over the aggregated list. Since we want exam-specific ranks, we might just use the grand logic or exam-specific logic.
+          // The requested feature asks for the data for all exams one after the other.
+          aggregatedStudents.forEach(student => {
+              const examData = student.examDetails[examId];
+              const examTotals = student.examTotals[examId];
+
+              if (!examData || !examTotals) return; // Student didn't participate in this exam
+
+              const perc = examTotals.max > 0 ? ((examTotals.obtained / examTotals.max) * 100).toFixed(2) : 0;
+
+              html += `<tr>
+                  <td class="text-center">${student.rollNo}</td>
+                  <td>${student.name || 'Unnamed'}</td>`;
+
+              subjectGroups.forEach(group => {
+                  group.tests.forEach(test => {
+                      const marks = examData.marks?.[test.id] ?? '-';
+                      html += `<td class="text-center">${marks}</td>`;
+                  });
+              });
+
+              html += `   <td class="text-center font-bold">${examTotals.obtained}</td>
+                  <td class="text-center font-bold">${examTotals.max}</td>
+                  <td class="text-center font-bold">${perc}%</td>
+              </tr>`;
+          });
+
+          html += `</tbody></table>`;
+      });
+
+      const mhtmlContent = generateMHTML(html, `${classId}_Full_Report`);
+      downloadMHTML(mhtmlContent, `${classId}_Full_Report.mhtml`);
+  };
+
   if (loading) return <div className="p-8 text-center text-gray-500">Loading Aggregate Results...</div>;
 
   // Apply live search filtering
@@ -232,6 +307,9 @@ export default function ClassResult() {
                 title="Toggle Full Screen (Anonymous) Mode"
             >
                 {isFullScreenMode ? <Minimize2 className="h-4 w-4" /> : <Maximize2 className="h-4 w-4" />}
+            </Button>
+            <Button variant="outline" onClick={handleDownloadFullClassReport} className="shrink-0 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border-green-200">
+                <FileText className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Download Full Report</span>
             </Button>
             <Button variant="outline" onClick={() => window.print()} className="shrink-0">
                 <Printer className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Print</span>
