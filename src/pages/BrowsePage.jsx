@@ -98,7 +98,7 @@ export default function BrowsePage() {
 
       for (let eIdx = 0; eIdx < classExams.length; eIdx++) {
           const examName = classExams[eIdx];
-          const examData = await db.getExamData(sessionName, className, examName);
+          const examData = await db.getStudents(sessionName, className, examName);
           const config = await db.getExamConfig(sessionName, className, examName);
           const students = examData || [];
           const subjectGroups = config?.subjectGroups || [];

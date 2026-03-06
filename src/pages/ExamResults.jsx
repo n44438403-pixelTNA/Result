@@ -10,7 +10,6 @@ import ExamParams from '../components/admin/ExamParams';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import MarksheetModal from '../components/MarksheetModal';
 import StudentGraphModal from '../components/StudentGraphModal';
-import { generateHTML, downloadHTML } from '../lib/html';
 
 export default function ExamResults() {
   const { user } = useAuth();
@@ -32,7 +31,6 @@ export default function ExamResults() {
   const [searchRollNo, setSearchRollNo] = useState('');
   const [searchError, setSearchError] = useState('');
   const [isFullScreenMode, setIsFullScreenMode] = useState(false);
-  const [defaultMarks, setDefaultMarks] = useState({});
 
   // Load data
   useEffect(() => {
@@ -233,31 +231,15 @@ export default function ExamResults() {
       return 'F';
   };
 
-  const applyDefaultMarksToSubject = (groupIndex) => {
-      const group = config?.subjectGroups[groupIndex];
-      if (!group || !group.tests || group.tests.length === 0) return;
-
-      const marksValue = defaultMarks[groupIndex];
-      if (marksValue === undefined || marksValue === '') return;
-
-      let parsedValue = marksValue;
-      const upperVal = marksValue.toUpperCase();
-      if (upperVal === 'A' || upperVal === 'X') {
-          parsedValue = upperVal;
-      } else {
-          const intVal = parseInt(marksValue);
-          parsedValue = isNaN(intVal) ? '' : intVal;
-      }
-
-      if (confirm(`Are you sure you want to set default marks to "${parsedValue}" for all students in ${group.subjectName}? This will overwrite existing marks for these tests.`)) {
+  const applyHolidayToTest = (testId, testName) => {
+      if (confirm(`Are you sure you want to mark "${testName}" as a Holiday (X) for all students? This will overwrite existing marks for this specific test.`)) {
           const updatedStudents = students.map(student => {
               const updatedMarks = { ...student.marks };
-              group.tests.forEach(test => {
-                  updatedMarks[test.id] = parsedValue;
-              });
+              updatedMarks[testId] = 'X';
               return { ...student, marks: updatedMarks };
           });
           setStudents(updatedStudents);
+          setHasUnsavedChanges(true);
       }
   };
 
@@ -381,88 +363,6 @@ export default function ExamResults() {
     }
   };
 
-  const handleDownloadFullReport = () => {
-      const rankedList = getRankedStudents();
-      const subjectGroups = config?.subjectGroups || [];
-      const institute = sessionDetails?.instituteName || 'Institute / Coaching Name';
-      const director = sessionDetails?.director || '';
-      const est = sessionDetails?.est || '';
-      const mobile = sessionDetails?.mobile || '';
-      const address = sessionDetails?.address || '';
-
-      let html = `<div class="text-center mb-6 border-b-2 border-gray-800 pb-4">
-          <h1 class="text-3xl font-extrabold uppercase tracking-wider text-gray-900">${institute}</h1>
-          <div class="text-sm font-semibold text-gray-600 mt-1 flex justify-center gap-4 flex-wrap">
-            ${director ? `<span>Director: ${director}</span>` : ''}
-            ${est ? `<span>Est: ${est}</span>` : ''}
-            ${mobile ? `<span>Mob: ${mobile}</span>` : ''}
-          </div>
-          ${address ? `<div class="text-sm text-gray-700 mt-1 font-medium">${address}</div>` : ''}
-          <div class="mt-4 pt-2 border-t border-gray-300">
-             <h2 class="text-xl font-bold text-gray-800">Exam Result: ${examId}</h2>
-             <p class="text-md text-gray-600 font-medium">Session: ${session} | Class: ${classId}</p>
-          </div>
-      </div>`;
-
-      html += `<table class="w-full">
-          <thead>
-              <tr>
-                  <th>Roll No</th>
-                  <th>Name</th>`;
-
-      subjectGroups.forEach(group => {
-          group.tests.forEach(test => {
-              html += `<th>${group.subjectName} - ${test.name} (Max: ${test.maxMarks})</th>`;
-          });
-      });
-
-      html += `   <th>Present</th>
-                  <th>Absent</th>
-                  <th>Closed</th>
-                  <th>Total Obtained</th>
-                  <th>Total Max</th>
-                  <th>Percentage</th>
-                  <th>Grade</th>
-                  <th>Rank</th>
-              </tr>
-          </thead>
-          <tbody>`;
-
-      rankedList.forEach(student => {
-          const stats = getAttendanceStats(student);
-          const totalObt = calculateTotalObtained(student);
-          const totalMax = calculateTotalMax(student);
-          const perc = calculatePercentage(student);
-          const grade = getGrade(perc);
-
-          html += `<tr>
-              <td class="text-center">${student.rollNo}</td>
-              <td>${student.name || 'Unnamed'}</td>`;
-
-          subjectGroups.forEach(group => {
-              group.tests.forEach(test => {
-                  const marks = student.marks?.[test.id] ?? '-';
-                  html += `<td class="text-center">${marks}</td>`;
-              });
-          });
-
-          html += `   <td class="text-center">${stats.present}</td>
-              <td class="text-center text-red-600 font-bold">${stats.absent}</td>
-              <td class="text-center">${stats.closed}</td>
-              <td class="text-center font-bold">${totalObt}</td>
-              <td class="text-center font-bold">${totalMax}</td>
-              <td class="text-center font-bold">${perc}%</td>
-              <td class="text-center font-bold">${grade}</td>
-              <td class="text-center font-bold">${student.rank}</td>
-          </tr>`;
-      });
-
-      html += `</tbody></table>`;
-
-      const fullHtmlContent = generateHTML(html, `${examId}_Full_Report`);
-      downloadHTML(fullHtmlContent, `${examId}_Full_Report.html`);
-  };
-
   if (loading) return <div>Loading...</div>;
 
   const subjectGroups = config?.subjectGroups || [];
@@ -520,9 +420,6 @@ export default function ExamResults() {
                </Button>
             ) : (
                <>
-                  <Button variant="outline" onClick={handleDownloadFullReport} className="shrink-0 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border-green-200">
-                      <FileText className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Download Report</span>
-                  </Button>
                   <Button variant="outline" onClick={() => setShowConfig(!showConfig)} className="shrink-0">
                       {showConfig ? 'Hide Config' : 'Edit Config'}
                   </Button>
@@ -565,29 +462,8 @@ export default function ExamResults() {
                 )}
                 {subjectGroups.map((group, i) => (
                    group.tests.length > 0 && (
-                     <TableHead key={i} colSpan={group.tests.length} className="text-center border-r border-b font-bold bg-gray-50 p-2">
-                       <div className="flex flex-col items-center justify-center gap-1">
-                           <span>{group.subjectName}</span>
-                           {user && (
-                               <div className="flex items-center gap-1 mt-1 justify-center w-full">
-                                   <Input
-                                       type="text"
-                                       placeholder="Default Marks"
-                                       className="h-6 text-xs text-center w-24 bg-white"
-                                       value={defaultMarks[i] || ''}
-                                       onChange={(e) => setDefaultMarks({...defaultMarks, [i]: e.target.value})}
-                                   />
-                                   <Button
-                                       variant="outline"
-                                       size="sm"
-                                       className="h-6 text-[10px] px-2"
-                                       onClick={() => applyDefaultMarksToSubject(i)}
-                                   >
-                                       Set
-                                   </Button>
-                               </div>
-                           )}
-                       </div>
+                     <TableHead key={i} colSpan={group.tests.length} className="text-center border-r border-b font-bold bg-gray-50">
+                       {group.subjectName}
                      </TableHead>
                    )
                 ))}
@@ -608,6 +484,19 @@ export default function ExamResults() {
                       {test.closedReason && (
                           <div className="text-[10px] text-red-500 font-medium mt-1 bg-red-50 px-1 rounded inline-block truncate max-w-full" title={test.closedReason}>
                               {test.closedReason}
+                          </div>
+                      )}
+                      {user && (
+                          <div className="mt-1">
+                              <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-5 text-[10px] px-1 text-gray-400 hover:text-red-500 hover:bg-red-50"
+                                  onClick={() => applyHolidayToTest(test.id, test.name)}
+                                  title="Mark as Holiday for all"
+                              >
+                                  Set Holiday
+                              </Button>
                           </div>
                       )}
                     </TableHead>
@@ -701,18 +590,19 @@ export default function ExamResults() {
                               {user ? (
                               <Input
                                   type="text"
-                                  value={marks}
+                                  value={marks === 'X' ? 'Holiday' : marks}
                                   onChange={(e) => handleMarkChange(index, test.id, e.target.value)}
-                                  className={`h-8 w-20 text-center ${marks === 'A' ? 'text-red-500 font-bold bg-red-50' : marks === 'X' ? 'text-gray-500 font-bold bg-gray-100' : ''}`}
+                                  className={`h-8 w-20 text-center ${marks === 'A' ? 'text-red-500 font-bold bg-red-50' : marks === 'X' ? 'text-gray-400 font-bold bg-gray-100 cursor-not-allowed text-[10px]' : ''}`}
                                   placeholder="-"
+                                  disabled={marks === 'X'}
                                   title="Enter marks, 'A' for Absent, 'X' for Class Closed"
                               />
                               ) : (
-                              <span className={`text-base ${marks === 'A' ? 'text-red-500 font-bold' : marks === 'X' ? 'text-gray-500 font-bold' : ''}`}>
-                                  {marks !== '' ? marks : '-'}
+                              <span className={`text-base ${marks === 'A' ? 'text-red-500 font-bold' : marks === 'X' ? 'text-gray-400 text-xs font-semibold' : ''}`}>
+                                  {marks === 'X' ? 'Holiday' : marks !== '' ? marks : '-'}
                               </span>
                               )}
-                              <span className="text-[10px] text-gray-500 font-medium bg-gray-100 px-1.5 rounded">{perc}{perc !== '-' ? '%' : ''}</span>
+                              {perc !== '-' && <span className="text-[10px] text-gray-500 font-medium bg-gray-100 px-1.5 rounded">{perc}%</span>}
                           </div>
                         </TableCell>
                       );
