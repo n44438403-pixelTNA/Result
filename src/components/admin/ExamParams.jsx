@@ -36,7 +36,7 @@ export default function ExamParams({ config, onSave }) {
 
   const addSubjectGroup = () => {
     const name = newSubjectName.trim() || `Subject ${subjectGroups.length + 1}`;
-    setSubjectGroups([...subjectGroups, { subjectName: name, tests: [] }]);
+    setSubjectGroups([...subjectGroups, { subjectName: name, tests: [], defaultMaxMarks: 100 }]);
     setNewSubjectName('');
   };
 
@@ -54,13 +54,30 @@ export default function ExamParams({ config, onSave }) {
     setSubjectGroups(updated);
   };
 
+  const updateSubjectDefaultMaxMarks = (groupIndex, newMaxMarks) => {
+    const updated = [...subjectGroups];
+    updated[groupIndex] = { ...updated[groupIndex], defaultMaxMarks: newMaxMarks };
+    setSubjectGroups(updated);
+  };
+
+  const applyDefaultMaxMarksToAllTests = (groupIndex) => {
+    const updated = [...subjectGroups];
+    const group = { ...updated[groupIndex] };
+    const defaultMax = group.defaultMaxMarks || 100;
+    if(confirm(`Set Full Marks to ${defaultMax} for ALL tests in ${group.subjectName}?`)) {
+       group.tests = group.tests.map(test => ({ ...test, maxMarks: defaultMax }));
+       updated[groupIndex] = group;
+       setSubjectGroups(updated);
+    }
+  };
+
   const addTestToGroup = (groupIndex) => {
     const updated = [...subjectGroups];
     const group = { ...updated[groupIndex] };
     const newTest = {
       id: `test_${Date.now()}_${Math.floor(Math.random()*1000)}`,
       name: `Test ${group.tests.length + 1}`,
-      maxMarks: 100,
+      maxMarks: group.defaultMaxMarks || 100,
       date: new Date().toISOString().split('T')[0]
     };
     group.tests = [...group.tests, newTest];
@@ -113,16 +130,26 @@ export default function ExamParams({ config, onSave }) {
           <div className="space-y-6">
             {subjectGroups.map((group, gIndex) => (
               <div key={gIndex} className="border rounded-md overflow-hidden">
-                  <div className="bg-gray-100 px-4 py-2 flex justify-between items-center border-b">
-                      <div className="flex items-center gap-2 font-semibold">
-                          Subject:
+                  <div className="bg-gray-100 px-4 py-2 flex flex-col md:flex-row justify-between items-start md:items-center gap-3 border-b">
+                      <div className="flex flex-wrap items-center gap-2 font-semibold w-full md:w-auto">
+                          <span>Subject:</span>
                           <Input
                             value={group.subjectName}
                             onChange={(e) => updateSubjectName(gIndex, e.target.value)}
-                            className="h-7 w-48 font-semibold bg-white"
+                            className="h-7 w-40 font-semibold bg-white"
                           />
+                          <span className="text-xs text-gray-500 ml-2">Default Max:</span>
+                          <Input
+                            type="number"
+                            value={group.defaultMaxMarks || 100}
+                            onChange={(e) => updateSubjectDefaultMaxMarks(gIndex, parseInt(e.target.value) || 0)}
+                            className="h-7 w-20 bg-white"
+                          />
+                          <Button variant="outline" size="sm" className="h-7 text-xs px-2" onClick={() => applyDefaultMaxMarksToAllTests(gIndex)} title="Apply to existing tests">
+                              Set All
+                          </Button>
                       </div>
-                      <div className="flex gap-2">
+                      <div className="flex items-center gap-2 shrink-0">
                           <Button variant="ghost" size="sm" onClick={() => addTestToGroup(gIndex)} className="text-blue-600 hover:text-blue-800 hover:bg-blue-50 h-8">
                              <Plus className="h-4 w-4 mr-1" /> Add Test
                           </Button>
