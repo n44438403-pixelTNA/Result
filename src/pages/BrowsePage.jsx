@@ -77,10 +77,111 @@ export default function BrowsePage() {
      alert("Session details updated successfully!");
   };
 
+  const buildExamTableHTML = (examName, students, subjectGroups) => {
+      let html = '';
+      if (!students || students.length === 0) return html;
+
+      const calculateTotalObtained = (student) => {
+        if (!student.marks || !subjectGroups) return 0;
+        let sum = 0;
+        subjectGroups.forEach(group => {
+            group.tests.forEach(test => {
+                const mark = student.marks[test.id];
+                if (mark !== 'A' && mark !== 'X') {
+                   sum += (parseInt(mark) || 0);
+                }
+            });
+        });
+        return sum;
+      };
+
+      const calculateTotalMax = (student) => {
+          if (!subjectGroups) return 0;
+          let sum = 0;
+          subjectGroups.forEach(group => {
+              group.tests.forEach(test => {
+                  const mark = student?.marks?.[test.id];
+                  if (mark !== 'X') {
+                      sum += (parseInt(test.maxMarks) || 0);
+                  }
+              });
+          });
+          return sum;
+      };
+
+      // Rank calculation
+      let rankedList = [...students].map(s => ({
+          ...s,
+          totalObtained: calculateTotalObtained(s),
+          totalMax: calculateTotalMax(s)
+      })).sort((a, b) => b.totalObtained - a.totalObtained);
+
+      let currentRank = 1;
+      for (let i = 0; i < rankedList.length; i++) {
+          if (i > 0 && rankedList[i].totalObtained < rankedList[i - 1].totalObtained) {
+              currentRank = i + 1;
+          }
+          rankedList[i].rank = currentRank;
+      }
+
+      html += `<div class="mb-4 mt-6">
+          <h3 class="text-xl font-bold border-b pb-2">Exam: ${examName}</h3>
+      </div>`;
+
+      html += `<table class="w-full mb-8" style="table-layout: auto;">
+          <thead>
+              <tr class="bg-gray-100">
+                  <th class="p-2 border" rowspan="2">Rank</th>
+                  <th class="p-2 border" rowspan="2">Roll No</th>
+                  <th class="p-2 border" rowspan="2" style="min-width: 150px;">Name</th>`;
+
+      subjectGroups.forEach(group => {
+          html += `<th class="p-2 border" colspan="${group.tests.length}">${group.subjectName}</th>`;
+      });
+
+      html += `   <th class="p-2 border" rowspan="2">Total Marks</th>
+                  <th class="p-2 border" rowspan="2">%</th>
+              </tr>
+              <tr class="bg-gray-50">`;
+
+      subjectGroups.forEach(group => {
+          group.tests.forEach(test => {
+              html += `<th class="p-2 border text-xs whitespace-nowrap">${test.name || test.id}<br><span style="font-weight:normal;color:#2563eb;">Full: ${test.maxMarks}</span></th>`;
+          });
+      });
+
+      html += `</tr></thead><tbody>`;
+
+      rankedList.forEach((student) => {
+          const perc = student.totalMax > 0 ? ((student.totalObtained / student.totalMax) * 100).toFixed(2) : 0;
+          html += `<tr class="hover:bg-gray-50">
+              <td class="p-2 border text-center font-bold">#${student.rank}</td>
+              <td class="p-2 border text-center">${student.rollNo}</td>
+              <td class="p-2 border font-medium">${student.name || 'Unnamed'}</td>`;
+
+          subjectGroups.forEach(group => {
+              group.tests.forEach(test => {
+                  const marks = student.marks?.[test.id] ?? '-';
+                  const isHoliday = marks === 'X';
+                  const displayMark = isHoliday ? 'Holiday' : marks;
+                  const style = isHoliday ? 'color:#9ca3af;font-size:10px;' : (marks === 'A' ? 'color:#ef4444;font-weight:bold;' : '');
+                  html += `<td class="text-center border p-2" style="${style}">${displayMark}</td>`;
+              });
+          });
+
+          html += `
+              <td class="p-2 border text-center font-semibold text-blue-700">${student.totalObtained} / ${student.totalMax}</td>
+              <td class="p-2 border text-center font-bold">${perc}%</td>
+          </tr>`;
+      });
+
+      html += `</tbody></table>`;
+      return html;
+  };
+
   const handleDownloadFullSessionReport = async (e, sessionName) => {
     e.stopPropagation();
 
-    // Fetch all classes for the session
     const classData = classes[sessionName] || await db.getClasses(sessionName);
 
     let html = `<div class="text-center mb-6 border-b-2 border-gray-800 pb-4">
@@ -103,102 +204,8 @@ export default function BrowsePage() {
           const students = examData || [];
           const subjectGroups = config?.subjectGroups || [];
 
-          if (students.length === 0) continue;
+          html += buildExamTableHTML(examName, students, subjectGroups);
 
-          const calculateTotalObtained = (student) => {
-            if (!student.marks || !subjectGroups) return 0;
-            let sum = 0;
-            subjectGroups.forEach(group => {
-                group.tests.forEach(test => {
-                    const mark = student.marks[test.id];
-                    if (mark !== 'A' && mark !== 'X') {
-                       sum += (parseInt(mark) || 0);
-                    }
-                });
-            });
-            return sum;
-          };
-
-          const calculateTotalMax = (student) => {
-              if (!subjectGroups) return 0;
-              let sum = 0;
-              subjectGroups.forEach(group => {
-                  group.tests.forEach(test => {
-                      const mark = student?.marks?.[test.id];
-                      if (mark !== 'X') {
-                          sum += (parseInt(test.maxMarks) || 0);
-                      }
-                  });
-              });
-              return sum;
-          };
-
-          // Rank calculation
-          let rankedList = [...students].map(s => ({
-              ...s,
-              totalObtained: calculateTotalObtained(s),
-              totalMax: calculateTotalMax(s)
-          })).sort((a, b) => b.totalObtained - a.totalObtained);
-
-          let currentRank = 1;
-          for (let i = 0; i < rankedList.length; i++) {
-              if (i > 0 && rankedList[i].totalObtained < rankedList[i - 1].totalObtained) {
-                  currentRank = i + 1;
-              }
-              rankedList[i].rank = currentRank;
-          }
-
-          html += `<div class="mb-4 mt-6">
-              <h3 class="text-xl font-bold border-b pb-2">Exam: ${examName}</h3>
-          </div>`;
-
-          html += `<table class="w-full mb-8">
-              <thead>
-                  <tr class="bg-gray-100">
-                      <th class="p-2 border" rowspan="2">Rank</th>
-                      <th class="p-2 border" rowspan="2">Roll No</th>
-                      <th class="p-2 border" rowspan="2">Name</th>`;
-
-          subjectGroups.forEach(group => {
-              html += `<th class="p-2 border" colspan="${group.tests.length}">${group.subjectName}</th>`;
-          });
-
-          html += `   <th class="p-2 border" rowspan="2">Total Marks</th>
-                      <th class="p-2 border" rowspan="2">%</th>
-                  </tr>
-                  <tr class="bg-gray-50">`;
-
-          subjectGroups.forEach(group => {
-              group.tests.forEach(test => {
-                  html += `<th class="p-2 border text-xs">${test.name || test.id} (Max ${test.maxMarks})</th>`;
-              });
-          });
-
-          html += `</tr></thead><tbody>`;
-
-          rankedList.forEach((student) => {
-              const perc = student.totalMax > 0 ? ((student.totalObtained / student.totalMax) * 100).toFixed(2) : 0;
-              html += `<tr>
-                  <td class="p-2 border text-center font-bold">#${student.rank}</td>
-                  <td class="p-2 border text-center">${student.rollNo}</td>
-                  <td class="p-2 border">${student.name || 'Unnamed'}</td>`;
-
-              subjectGroups.forEach(group => {
-                  group.tests.forEach(test => {
-                      const marks = student.marks?.[test.id] ?? '-';
-                      html += `<td class="text-center border p-2">${marks}</td>`;
-                  });
-              });
-
-              html += `
-                  <td class="p-2 border text-center">${student.totalObtained} / ${student.totalMax}</td>
-                  <td class="p-2 border text-center">${perc}%</td>
-              </tr>`;
-          });
-
-          html += `</tbody></table>`;
-
-          // Page break after each exam except the very last one
           if (cIdx < classData.length - 1 || eIdx < classExams.length - 1) {
               html += `<div style="page-break-before: always;"></div>`;
           }
@@ -207,6 +214,27 @@ export default function BrowsePage() {
 
     const fullHtmlContent = generateHTML(html, `${sessionName}_Full_Session_Report`);
     downloadHTML(fullHtmlContent, `${sessionName}_Full_Session_Report.html`);
+  };
+
+  const handleDownloadSingleExam = async (e, sessionName, className, examName) => {
+      e.stopPropagation();
+      const examData = await db.getStudents(sessionName, className, examName);
+      const config = await db.getExamConfig(sessionName, className, examName);
+      const students = examData || [];
+      const subjectGroups = config?.subjectGroups || [];
+
+      let html = `<div class="text-center mb-6 border-b-2 border-gray-800 pb-4">
+          <h1 class="text-3xl font-extrabold uppercase tracking-wider text-gray-900">${sessionDetails[sessionName]?.instituteName || 'Institute'}</h1>
+          <div class="mt-4 pt-2 border-t border-gray-300">
+             <h2 class="text-xl font-bold text-gray-800">Exam Report: ${examName}</h2>
+             <p class="text-md font-medium text-gray-600">Session: ${sessionName} | Class: ${className}</p>
+          </div>
+      </div>`;
+
+      html += buildExamTableHTML(examName, students, subjectGroups);
+
+      const fullHtmlContent = generateHTML(html, `${className}_${examName}_Report`);
+      downloadHTML(fullHtmlContent, `${className}_${examName}_Report.html`);
   };
 
   const handleDetailChange = (session, field, value) => {
@@ -530,6 +558,15 @@ export default function BrowsePage() {
                                             <Button size="sm" variant={user ? "outline" : "default"} onClick={() => navigateToExam(session, className, exam)}>
                                                 {user ? <Edit className="mr-2 h-4 w-4" /> : <FileText className="mr-2 h-4 w-4" />}
                                                 {user ? "Edit / View" : "View Results"}
+                                            </Button>
+                                            <Button
+                                              size="sm"
+                                              variant="outline"
+                                              title="Download Event Report"
+                                              className="text-green-600 border-green-200 hover:bg-green-50"
+                                              onClick={(e) => handleDownloadSingleExam(e, session, className, exam)}
+                                            >
+                                                <Download className="h-4 w-4" />
                                             </Button>
                                         </div>
                                     </div>
