@@ -10,6 +10,7 @@ import ExamParams from '../components/admin/ExamParams';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import MarksheetModal from '../components/MarksheetModal';
 import StudentGraphModal from '../components/StudentGraphModal';
+import { generateHTML, downloadHTML } from '../lib/html';
 
 export default function ExamResults() {
   const { user } = useAuth();
@@ -244,6 +245,99 @@ export default function ExamResults() {
   };
 
   // Helper to get students with pre-calculated ranks based on current marks
+  const handleDownloadFullReport = () => {
+      const rankedList = getRankedStudents();
+      const subjectGroups = config?.subjectGroups || [];
+      const institute = sessionDetails?.instituteName || 'Institute / Coaching Name';
+      const director = sessionDetails?.director || '';
+      const est = sessionDetails?.est || '';
+      const mobile = sessionDetails?.mobile || '';
+      const address = sessionDetails?.address || '';
+
+      let html = `<div class="text-center mb-6 border-b-2 border-gray-800 pb-4">
+          <h1 class="text-3xl font-extrabold uppercase tracking-wider text-gray-900">${institute}</h1>
+          <div class="text-sm font-semibold text-gray-600 mt-1 flex justify-center gap-4 flex-wrap">
+            ${director ? `<span>Director: ${director}</span>` : ''}
+            ${est ? `<span>Est: ${est}</span>` : ''}
+            ${mobile ? `<span>Mob: ${mobile}</span>` : ''}
+          </div>
+          ${address ? `<div class="text-sm text-gray-700 mt-1 font-medium">${address}</div>` : ''}
+          <div class="mt-4 pt-2 border-t border-gray-300">
+             <h2 class="text-xl font-bold text-gray-800">Exam Result: ${examId}</h2>
+             <p class="text-md text-gray-600 font-medium">Session: ${session} | Class: ${classId}</p>
+          </div>
+      </div>`;
+
+      html += `<table class="w-full">
+          <thead>
+              <tr class="bg-gray-100">
+                  <th class="p-2 border" rowspan="2">Roll No</th>
+                  <th class="p-2 border" rowspan="2">Name</th>`;
+
+      subjectGroups.forEach(group => {
+          html += `<th class="p-2 border" colspan="${group.tests.length}">${group.subjectName}</th>`;
+      });
+
+      html += `<th class="p-2 border" colspan="3">Attendance</th>
+                  <th class="p-2 border" rowspan="2">Total Obt.</th>
+                  <th class="p-2 border" rowspan="2">Max Marks</th>
+                  <th class="p-2 border" rowspan="2">%</th>
+                  <th class="p-2 border" rowspan="2">Grade</th>
+                  <th class="p-2 border" rowspan="2">Rank</th>
+              </tr>
+              <tr class="bg-gray-50">`;
+
+      subjectGroups.forEach(group => {
+          group.tests.forEach(test => {
+              html += `<th class="p-2 border text-xs">${test.name || test.id}<br><span class="font-normal text-blue-600">Full: ${test.maxMarks}</span></th>`;
+          });
+      });
+
+      html += `<th class="p-2 border text-xs text-purple-700">Present</th>
+                  <th class="p-2 border text-xs text-red-600">Absent</th>
+                  <th class="p-2 border text-xs text-gray-500">Closed</th>
+              </tr>
+          </thead>
+          <tbody>`;
+
+      rankedList.forEach(student => {
+          const stats = getAttendanceStats(student);
+          const totalObt = calculateTotalObtained(student);
+          const totalMax = calculateTotalMax(student);
+          const perc = calculatePercentage(student);
+          const grade = getGrade(perc);
+
+          html += `<tr>
+              <td class="text-center p-2 border font-bold">${student.rollNo}</td>
+              <td class="p-2 border">${student.name || 'Unnamed'}</td>`;
+
+          subjectGroups.forEach(group => {
+              group.tests.forEach(test => {
+                  const marks = student.marks?.[test.id] ?? '-';
+                  const isHoliday = marks === 'X';
+                  const displayMark = isHoliday ? 'Holiday' : marks;
+                  const style = isHoliday ? 'color:#9ca3af;font-size:10px;' : (marks === 'A' ? 'color:#ef4444;font-weight:bold;' : '');
+                  html += `<td class="text-center border p-2" style="${style}">${displayMark}</td>`;
+              });
+          });
+
+          html += `   <td class="text-center p-2 border">${stats.present}</td>
+              <td class="text-center p-2 border text-red-600 font-bold">${stats.absent}</td>
+              <td class="text-center p-2 border text-gray-500">${stats.closed}</td>
+              <td class="text-center p-2 border font-bold text-blue-700">${totalObt}</td>
+              <td class="text-center p-2 border font-semibold">${totalMax}</td>
+              <td class="text-center p-2 border font-bold">${perc}%</td>
+              <td class="text-center p-2 border font-bold">${grade}</td>
+              <td class="text-center p-2 border font-bold">#${student.rank}</td>
+          </tr>`;
+      });
+
+      html += `</tbody></table>`;
+
+      const fullHtmlContent = generateHTML(html, `${examId}_Full_Report`);
+      downloadHTML(fullHtmlContent, `${examId}_Full_Report.html`);
+  };
+
   const getRankedStudents = () => {
       if (!students || students.length === 0) return [];
       // Calculate total obtained for everyone
@@ -382,7 +476,24 @@ export default function ExamResults() {
   const classAvgPerc = totalStudents > 0
       ? (rankedStudentsList.reduce((acc, s) => acc + parseFloat(calculatePercentage(s)), 0) / totalStudents).toFixed(2)
       : 0;
-  const highestScore = totalStudents > 0 ? Math.max(...rankedStudentsList.map(s => s.totalObtained)) : 0;
+
+  const validScores = rankedStudentsList.map(s => Number(s.totalObtained)).filter(n => !isNaN(n));
+  const highestScore = validScores.length > 0 ? Math.max(...validScores) : 0;
+
+  // Detailed Top/Bottom Stats
+  const validRankedStudents = [...rankedStudentsList].filter(s => !isNaN(Number(s.totalObtained)));
+  const sortedByMarksDesc = [...validRankedStudents].sort((a, b) => b.totalObtained - a.totalObtained);
+  const sortedByMarksAsc = [...validRankedStudents].sort((a, b) => a.totalObtained - b.totalObtained);
+
+  const top5Scorers = sortedByMarksDesc.slice(0, 5);
+  const lowest5Scorers = sortedByMarksAsc.slice(0, 5);
+
+  const studentsWithAttendance = rankedStudentsList.map(s => ({ ...s, stats: getAttendanceStats(s) }));
+  const sortedByPresentDesc = [...studentsWithAttendance].sort((a, b) => b.stats.present - a.stats.present);
+  const sortedByAbsentDesc = [...studentsWithAttendance].sort((a, b) => b.stats.absent - a.stats.absent);
+
+  const top5MostPresent = sortedByPresentDesc.slice(0, 5).filter(s => s.stats.present > 0);
+  const top5MostAbsent = sortedByAbsentDesc.slice(0, 5).filter(s => s.stats.absent > 0);
 
   return (
     <div className="space-y-6">
@@ -420,6 +531,9 @@ export default function ExamResults() {
                </Button>
             ) : (
                <>
+                  <Button variant="outline" onClick={handleDownloadFullReport} className="shrink-0 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border-green-200">
+                      <FileText className="mr-2 h-4 w-4" /> <span className="hidden sm:inline">Download Report</span>
+                  </Button>
                   <Button variant="outline" onClick={() => setShowConfig(!showConfig)} className="shrink-0">
                       {showConfig ? 'Hide Config' : 'Edit Config'}
                   </Button>
@@ -432,19 +546,70 @@ export default function ExamResults() {
       </div>
 
       {/* Summary Dashboard */}
-      <div className="grid grid-cols-3 gap-2 md:gap-4 mb-2">
-         <div className="bg-white p-2 md:p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center text-center">
-            <span className="text-xs md:text-sm text-gray-500 font-medium">Total Students</span>
-            <span className="text-lg md:text-2xl font-bold text-gray-800">{totalStudents}</span>
-         </div>
-         <div className="bg-white p-2 md:p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center text-center">
-            <span className="text-xs md:text-sm text-gray-500 font-medium">Class Average</span>
-            <span className="text-lg md:text-2xl font-bold text-blue-600">{classAvgPerc}%</span>
-         </div>
-         <div className="bg-white p-2 md:p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center text-center">
-            <span className="text-xs md:text-sm text-gray-500 font-medium">Highest Score</span>
-            <span className="text-lg md:text-2xl font-bold text-green-600">{highestScore}</span>
-         </div>
+      <div className="space-y-4 mb-4">
+          <div className="grid grid-cols-3 gap-2 md:gap-4">
+             <div className="bg-white p-2 md:p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center text-center">
+                <span className="text-xs md:text-sm text-gray-500 font-medium">Total Students</span>
+                <span className="text-lg md:text-2xl font-bold text-gray-800">{totalStudents}</span>
+             </div>
+             <div className="bg-white p-2 md:p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center text-center">
+                <span className="text-xs md:text-sm text-gray-500 font-medium">Class Average</span>
+                <span className="text-lg md:text-2xl font-bold text-blue-600">{classAvgPerc}%</span>
+             </div>
+             <div className="bg-white p-2 md:p-4 rounded-lg border shadow-sm flex flex-col items-center justify-center text-center">
+                <span className="text-xs md:text-sm text-gray-500 font-medium">Highest Score</span>
+                <span className="text-lg md:text-2xl font-bold text-green-600">{highestScore}</span>
+             </div>
+          </div>
+
+          {totalStudents > 0 && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="bg-white p-4 rounded-lg border shadow-sm">
+                      <h3 className="text-sm font-bold text-green-700 border-b pb-2 mb-2">Top 5 Scorers</h3>
+                      <ul className="space-y-1 text-sm">
+                          {top5Scorers.map((s, i) => (
+                              <li key={i} className="flex justify-between">
+                                  <span className="truncate pr-2">{s.name || s.rollNo}</span>
+                                  <span className="font-semibold">{s.totalObtained}</span>
+                              </li>
+                          ))}
+                      </ul>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border shadow-sm">
+                      <h3 className="text-sm font-bold text-red-700 border-b pb-2 mb-2">Lowest 5 Scorers</h3>
+                      <ul className="space-y-1 text-sm">
+                          {lowest5Scorers.map((s, i) => (
+                              <li key={i} className="flex justify-between">
+                                  <span className="truncate pr-2">{s.name || s.rollNo}</span>
+                                  <span className="font-semibold">{s.totalObtained}</span>
+                              </li>
+                          ))}
+                      </ul>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border shadow-sm">
+                      <h3 className="text-sm font-bold text-purple-700 border-b pb-2 mb-2">Most Present</h3>
+                      <ul className="space-y-1 text-sm">
+                          {top5MostPresent.length > 0 ? top5MostPresent.map((s, i) => (
+                              <li key={i} className="flex justify-between">
+                                  <span className="truncate pr-2">{s.name || s.rollNo}</span>
+                                  <span className="font-semibold">{s.stats.present}d</span>
+                              </li>
+                          )) : <li className="text-gray-400 italic">No attendance data</li>}
+                      </ul>
+                  </div>
+                  <div className="bg-white p-4 rounded-lg border shadow-sm">
+                      <h3 className="text-sm font-bold text-orange-700 border-b pb-2 mb-2">Most Absent</h3>
+                      <ul className="space-y-1 text-sm">
+                          {top5MostAbsent.length > 0 ? top5MostAbsent.map((s, i) => (
+                              <li key={i} className="flex justify-between">
+                                  <span className="truncate pr-2">{s.name || s.rollNo}</span>
+                                  <span className="font-semibold">{s.stats.absent}d</span>
+                              </li>
+                          )) : <li className="text-gray-400 italic">No absences recorded</li>}
+                      </ul>
+                  </div>
+              </div>
+          )}
       </div>
 
       {user && showConfig && (
@@ -588,15 +753,28 @@ export default function ExamResults() {
                         <TableCell key={test.id} className="text-center p-2 border-r">
                           <div className="flex flex-col items-center gap-1">
                               {user ? (
-                              <Input
-                                  type="text"
-                                  value={marks === 'X' ? 'Holiday' : marks}
-                                  onChange={(e) => handleMarkChange(index, test.id, e.target.value)}
-                                  className={`h-8 w-20 text-center ${marks === 'A' ? 'text-red-500 font-bold bg-red-50' : marks === 'X' ? 'text-gray-400 font-bold bg-gray-100 cursor-not-allowed text-[10px]' : ''}`}
-                                  placeholder="-"
-                                  disabled={marks === 'X'}
-                                  title="Enter marks, 'A' for Absent, 'X' for Class Closed"
-                              />
+                                marks === 'X' ? (
+                                   <div
+                                      className="h-8 w-20 flex items-center justify-center border border-gray-200 bg-gray-100 text-gray-400 font-bold text-[10px] rounded cursor-not-allowed select-none"
+                                      title="Holiday - Cannot be edited"
+                                      onDoubleClick={() => {
+                                          if (confirm("Remove Holiday marking for this student?")) {
+                                              handleMarkChange(index, test.id, '');
+                                          }
+                                      }}
+                                   >
+                                       Holiday
+                                   </div>
+                                ) : (
+                                  <Input
+                                      type="text"
+                                      value={marks}
+                                      onChange={(e) => handleMarkChange(index, test.id, e.target.value)}
+                                      className={`h-8 w-20 text-center ${marks === 'A' ? 'text-red-500 font-bold bg-red-50' : ''}`}
+                                      placeholder="-"
+                                      title="Enter marks, 'A' for Absent, 'X' for Class Closed"
+                                  />
+                                )
                               ) : (
                               <span className={`text-base ${marks === 'A' ? 'text-red-500 font-bold' : marks === 'X' ? 'text-gray-400 text-xs font-semibold' : ''}`}>
                                   {marks === 'X' ? 'Holiday' : marks !== '' ? marks : '-'}
