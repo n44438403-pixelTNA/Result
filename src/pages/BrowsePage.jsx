@@ -294,6 +294,21 @@ export default function BrowsePage() {
     }
   };
 
+  const handleRenameExam = async (sessionName, className, oldExamName) => {
+      const newExamName = window.prompt(`Enter new name for exam "${oldExamName}":`, oldExamName);
+      if (newExamName && newExamName.trim() !== '' && newExamName !== oldExamName) {
+          try {
+              await db.renameExam(sessionName, className, oldExamName, newExamName.trim());
+              const key = `${sessionName}-${className}`;
+              const examData = await db.getExams(sessionName, className);
+              setExams(prev => ({ ...prev, [key]: examData }));
+          } catch (error) {
+              console.error("Error renaming exam:", error);
+              alert("Failed to rename exam. Check console for details.");
+          }
+      }
+  };
+
   const navigateToExam = (session, className, examName) => {
     // URL encode components to be safe
     navigate(`/exam/${encodeURIComponent(session)}/${encodeURIComponent(className)}/${encodeURIComponent(examName)}`);
@@ -485,17 +500,32 @@ export default function BrowsePage() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {user && (
-                                              <Button
-                                                variant="ghost"
-                                                size="icon"
-                                                className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                                                onClick={(e) => {
-                                                  e.stopPropagation();
-                                                  handleDeleteExam(session, className, exam);
-                                                }}
-                                              >
-                                                <Trash className="h-4 w-4" />
-                                              </Button>
+                                              <>
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="text-blue-500 hover:text-blue-700 hover:bg-blue-50"
+                                                    title="Rename Exam"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleRenameExam(session, className, exam);
+                                                    }}
+                                                  >
+                                                    <Edit className="h-4 w-4" />
+                                                  </Button>
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="icon"
+                                                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                                                    title="Delete Exam"
+                                                    onClick={(e) => {
+                                                      e.stopPropagation();
+                                                      handleDeleteExam(session, className, exam);
+                                                    }}
+                                                  >
+                                                    <Trash className="h-4 w-4" />
+                                                  </Button>
+                                              </>
                                             )}
                                             <Button size="sm" variant={user ? "outline" : "default"} onClick={() => navigateToExam(session, className, exam)}>
                                                 {user ? <Edit className="mr-2 h-4 w-4" /> : <FileText className="mr-2 h-4 w-4" />}

@@ -167,6 +167,42 @@ export const dbService = {
     return data ? data.config : null;
   },
 
+
+  renameExam: async (session, classId, oldExamId, newExamId) => {
+    if (oldExamId === newExamId) return;
+
+    const oldDocRef = doc(db, COLLECTION_SESSIONS, session, 'classes', classId, 'exams', oldExamId);
+    const newDocRef = doc(db, COLLECTION_SESSIONS, session, 'classes', classId, 'exams', newExamId);
+
+    // 1. Copy config
+    const oldConfigSnap = await getDoc(oldDocRef);
+    if (oldConfigSnap.exists()) {
+        await setDoc(newDocRef, oldConfigSnap.data());
+    } else {
+        await setDoc(newDocRef, {}); // Create empty doc if it didn't exist
+    }
+
+    // 2. Copy all students
+    const oldStudentsRef = collection(db, COLLECTION_SESSIONS, session, 'classes', classId, 'exams', oldExamId, 'students');
+    const newStudentsRef = collection(db, COLLECTION_SESSIONS, session, 'classes', classId, 'exams', newExamId, 'students');
+    const studentsSnap = await getDocs(oldStudentsRef);
+
+    const writePromises = [];
+    const deletePromises = [];
+
+    studentsSnap.forEach(studentDoc => {
+        const studentData = studentDoc.data();
+        writePromises.push(setDoc(doc(newStudentsRef, studentDoc.id), studentData));
+        deletePromises.push(deleteDoc(studentDoc.ref));
+    });
+
+    await Promise.all(writePromises);
+
+    // 3. Delete old data
+    await Promise.all(deletePromises);
+    await deleteDoc(oldDocRef);
+  },
+
   deleteExam: async (session, classId, examId) => {
     const docRef = doc(db, COLLECTION_SESSIONS, session, 'classes', classId, 'exams', examId);
     await deleteDoc(docRef);
