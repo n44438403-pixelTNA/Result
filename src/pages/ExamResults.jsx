@@ -254,6 +254,29 @@ export default function ExamResults() {
       const mobile = sessionDetails?.mobile || '';
       const address = sessionDetails?.address || '';
 
+      // Calculate dashboard stats
+      const totalStudents = rankedList.length;
+      const classAvgPerc = totalStudents > 0
+          ? (rankedList.reduce((acc, s) => acc + parseFloat(calculatePercentage(s)), 0) / totalStudents).toFixed(2)
+          : 0;
+
+      const validScores = rankedList.map(s => Number(s.totalObtained)).filter(n => !isNaN(n));
+      const highestScore = validScores.length > 0 ? Math.max(...validScores) : 0;
+
+      const validRankedStudents = [...rankedList].filter(s => !isNaN(Number(s.totalObtained)));
+      const sortedByMarksDesc = [...validRankedStudents].sort((a, b) => b.totalObtained - a.totalObtained);
+      const sortedByMarksAsc = [...validRankedStudents].sort((a, b) => a.totalObtained - b.totalObtained);
+
+      const top5Scorers = sortedByMarksDesc.slice(0, 5);
+      const lowest5Scorers = sortedByMarksAsc.slice(0, 5);
+
+      const studentsWithAttendance = rankedList.map(s => ({ ...s, stats: getAttendanceStats(s) }));
+      const sortedByPresentDesc = [...studentsWithAttendance].sort((a, b) => b.stats.present - a.stats.present);
+      const sortedByAbsentDesc = [...studentsWithAttendance].sort((a, b) => b.stats.absent - a.stats.absent);
+
+      const top5MostPresent = sortedByPresentDesc.slice(0, 5).filter(s => s.stats.present > 0);
+      const top5MostAbsent = sortedByAbsentDesc.slice(0, 5).filter(s => s.stats.absent > 0);
+
       let html = `<div class="text-center mb-6 border-b-2 border-gray-800 pb-4">
           <h1 class="text-3xl font-extrabold uppercase tracking-wider text-gray-900">${institute}</h1>
           <div class="text-sm font-semibold text-gray-600 mt-1 flex justify-center gap-4 flex-wrap">
@@ -267,6 +290,52 @@ export default function ExamResults() {
              <p class="text-md text-gray-600 font-medium">Session: ${session} | Class: ${classId}</p>
           </div>
       </div>`;
+
+      // Add Dashboard Stats
+      html += `
+      <div style="display: flex; gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap; justify-content: center;">
+          <div style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; text-align: center; background: #fff; min-width: 150px;">
+             <span style="font-size: 0.875rem; color: #6b7280;">Total Students</span><br/>
+             <span style="font-size: 1.5rem; font-weight: bold; color: #1f2937;">${totalStudents}</span>
+          </div>
+          <div style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; text-align: center; background: #fff; min-width: 150px;">
+             <span style="font-size: 0.875rem; color: #6b7280;">Class Average</span><br/>
+             <span style="font-size: 1.5rem; font-weight: bold; color: #2563eb;">${classAvgPerc}%</span>
+          </div>
+          <div style="border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; text-align: center; background: #fff; min-width: 150px;">
+             <span style="font-size: 0.875rem; color: #6b7280;">Highest Score</span><br/>
+             <span style="font-size: 1.5rem; font-weight: bold; color: #16a34a;">${highestScore}</span>
+          </div>
+      </div>`;
+
+      if (totalStudents > 0) {
+          html += `<div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
+              <div style="flex: 1; border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; background: #fff; min-width: 200px;">
+                  <h3 style="font-size: 0.875rem; font-weight: bold; color: #15803d; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.5rem; margin-top: 0;">Top 5 Scorers</h3>
+                  <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem;">
+                      ${top5Scorers.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0;"><span style="padding-right: 0.5rem;">${s.name || s.rollNo}</span><span style="font-weight: 600;">${s.totalObtained}</span></li>`).join('')}
+                  </ul>
+              </div>
+              <div style="flex: 1; border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; background: #fff; min-width: 200px;">
+                  <h3 style="font-size: 0.875rem; font-weight: bold; color: #b91c1c; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.5rem; margin-top: 0;">Lowest 5 Scorers</h3>
+                  <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem;">
+                      ${lowest5Scorers.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0;"><span style="padding-right: 0.5rem;">${s.name || s.rollNo}</span><span style="font-weight: 600;">${s.totalObtained}</span></li>`).join('')}
+                  </ul>
+              </div>
+              <div style="flex: 1; border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; background: #fff; min-width: 200px;">
+                  <h3 style="font-size: 0.875rem; font-weight: bold; color: #6d28d9; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.5rem; margin-top: 0;">Most Present</h3>
+                  <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem;">
+                      ${top5MostPresent.length > 0 ? top5MostPresent.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0;"><span style="padding-right: 0.5rem;">${s.name || s.rollNo}</span><span style="font-weight: 600;">${s.stats.present}d</span></li>`).join('') : '<li style="color: #9ca3af; font-style: italic;">No attendance data</li>'}
+                  </ul>
+              </div>
+              <div style="flex: 1; border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; background: #fff; min-width: 200px;">
+                  <h3 style="font-size: 0.875rem; font-weight: bold; color: #c2410c; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.5rem; margin-top: 0;">Most Absent</h3>
+                  <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem;">
+                      ${top5MostAbsent.length > 0 ? top5MostAbsent.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0;"><span style="padding-right: 0.5rem;">${s.name || s.rollNo}</span><span style="font-weight: 600;">${s.stats.absent}d</span></li>`).join('') : '<li style="color: #9ca3af; font-style: italic;">No absences recorded</li>'}
+                  </ul>
+              </div>
+          </div>`;
+      }
 
       html += `<table class="w-full">
           <thead>
@@ -361,7 +430,11 @@ export default function ExamResults() {
       // Merge back ranks into original array ordered by rollNo
       return students.map(s => {
           const rankedVer = sorted.find(rs => rs.rollNo === s.rollNo);
-          return { ...s, rank: rankedVer ? rankedVer.rank : '-' };
+          return {
+              ...s,
+              rank: rankedVer ? rankedVer.rank : '-',
+              totalObtained: rankedVer ? rankedVer.totalObtained : 0
+          };
       });
   };
 
