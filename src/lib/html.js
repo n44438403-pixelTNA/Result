@@ -1,15 +1,9 @@
-export function generateMHTML(htmlContent, title) {
-  const mhtml = [
-    "MIME-Version: 1.0",
-    `Content-Type: multipart/related; boundary="----MultipartBoundary--"`,
-    "",
-    "------MultipartBoundary--",
-    "Content-Type: text/html; charset=UTF-8",
-    "Content-Transfer-Encoding: quoted-printable",
-    "",
+export function generateHTML(htmlContent, title) {
+  const html = [
     "<!DOCTYPE html>",
     "<html>",
     "<head>",
+    "<meta charset='utf-8'>",
     `<title>${title}</title>`,
     "<style>",
     "body { font-family: sans-serif; padding: 20px; background: white; color: black; }",
@@ -54,16 +48,14 @@ export function generateMHTML(htmlContent, title) {
     "<body>",
     htmlContent,
     "</body>",
-    "</html>",
-    "",
-    "------MultipartBoundary----"
-  ].join("\r\n");
+    "</html>"
+  ].join("\n");
 
-  return mhtml;
+  return html;
 }
 
-export function downloadMHTML(mhtml, filename) {
-  const blob = new Blob([mhtml], { type: 'message/rfc822' });
+export function downloadHTML(html, filename) {
+  const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;

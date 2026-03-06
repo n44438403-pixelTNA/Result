@@ -5,7 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import { Button } from '../components/ui/Button';
 import { Input } from '../components/ui/Input';
 import { Card, CardHeader, CardTitle, CardContent } from '../components/ui/Card';
-import { Plus, ChevronRight, ChevronDown, Edit, FileText, UserCircle, Layers, Save, Building, Trash } from 'lucide-react';
+import { Plus, ChevronRight, ChevronDown, Edit, FileText, UserCircle, Layers, Save, Building, Trash, Download } from 'lucide-react';
+import { generateHTML, downloadHTML } from '../lib/html';
 
 export default function BrowsePage() {
   const { user, loading: authLoading } = useAuth();
@@ -74,6 +75,138 @@ export default function BrowsePage() {
      if (!sessionDetails[session]) return;
      await db.updateSessionDetails(session, sessionDetails[session]);
      alert("Session details updated successfully!");
+  };
+
+  const handleDownloadFullSessionReport = async (e, sessionName) => {
+    e.stopPropagation();
+
+    // Fetch all classes for the session
+    const classData = classes[sessionName] || await db.getClasses(sessionName);
+
+    let html = `<div class="text-center mb-6 border-b-2 border-gray-800 pb-4">
+        <h1 class="text-3xl font-extrabold uppercase tracking-wider text-gray-900">${sessionDetails[sessionName]?.instituteName || 'Institute'}</h1>
+        <div class="mt-4 pt-2 border-t border-gray-300">
+           <h2 class="text-xl font-bold text-gray-800">Full Session Report: ${sessionName}</h2>
+        </div>
+    </div>`;
+
+    for (let cIdx = 0; cIdx < classData.length; cIdx++) {
+      const className = classData[cIdx];
+      const classExams = exams[className] || await db.getExams(sessionName, className);
+
+      html += `<div class="mt-8 mb-4 bg-gray-100 p-2"><h2 class="text-2xl font-bold text-center">Class: ${className}</h2></div>`;
+
+      for (let eIdx = 0; eIdx < classExams.length; eIdx++) {
+          const examName = classExams[eIdx];
+          const examData = await db.getExamData(sessionName, className, examName);
+          const config = await db.getExamConfig(sessionName, className, examName);
+          const students = examData || [];
+          const subjectGroups = config?.subjectGroups || [];
+
+          if (students.length === 0) continue;
+
+          const calculateTotalObtained = (student) => {
+            if (!student.marks || !subjectGroups) return 0;
+            let sum = 0;
+            subjectGroups.forEach(group => {
+                group.tests.forEach(test => {
+                    const mark = student.marks[test.id];
+                    if (mark !== 'A' && mark !== 'X') {
+                       sum += (parseInt(mark) || 0);
+                    }
+                });
+            });
+            return sum;
+          };
+
+          const calculateTotalMax = (student) => {
+              if (!subjectGroups) return 0;
+              let sum = 0;
+              subjectGroups.forEach(group => {
+                  group.tests.forEach(test => {
+                      const mark = student?.marks?.[test.id];
+                      if (mark !== 'X') {
+                          sum += (parseInt(test.maxMarks) || 0);
+                      }
+                  });
+              });
+              return sum;
+          };
+
+          // Rank calculation
+          let rankedList = [...students].map(s => ({
+              ...s,
+              totalObtained: calculateTotalObtained(s),
+              totalMax: calculateTotalMax(s)
+          })).sort((a, b) => b.totalObtained - a.totalObtained);
+
+          let currentRank = 1;
+          for (let i = 0; i < rankedList.length; i++) {
+              if (i > 0 && rankedList[i].totalObtained < rankedList[i - 1].totalObtained) {
+                  currentRank = i + 1;
+              }
+              rankedList[i].rank = currentRank;
+          }
+
+          html += `<div class="mb-4 mt-6">
+              <h3 class="text-xl font-bold border-b pb-2">Exam: ${examName}</h3>
+          </div>`;
+
+          html += `<table class="w-full mb-8">
+              <thead>
+                  <tr class="bg-gray-100">
+                      <th class="p-2 border" rowspan="2">Rank</th>
+                      <th class="p-2 border" rowspan="2">Roll No</th>
+                      <th class="p-2 border" rowspan="2">Name</th>`;
+
+          subjectGroups.forEach(group => {
+              html += `<th class="p-2 border" colspan="${group.tests.length}">${group.subjectName}</th>`;
+          });
+
+          html += `   <th class="p-2 border" rowspan="2">Total Marks</th>
+                      <th class="p-2 border" rowspan="2">%</th>
+                  </tr>
+                  <tr class="bg-gray-50">`;
+
+          subjectGroups.forEach(group => {
+              group.tests.forEach(test => {
+                  html += `<th class="p-2 border text-xs">${test.name || test.id} (Max ${test.maxMarks})</th>`;
+              });
+          });
+
+          html += `</tr></thead><tbody>`;
+
+          rankedList.forEach((student) => {
+              const perc = student.totalMax > 0 ? ((student.totalObtained / student.totalMax) * 100).toFixed(2) : 0;
+              html += `<tr>
+                  <td class="p-2 border text-center font-bold">#${student.rank}</td>
+                  <td class="p-2 border text-center">${student.rollNo}</td>
+                  <td class="p-2 border">${student.name || 'Unnamed'}</td>`;
+
+              subjectGroups.forEach(group => {
+                  group.tests.forEach(test => {
+                      const marks = student.marks?.[test.id] ?? '-';
+                      html += `<td class="text-center border p-2">${marks}</td>`;
+                  });
+              });
+
+              html += `
+                  <td class="p-2 border text-center">${student.totalObtained} / ${student.totalMax}</td>
+                  <td class="p-2 border text-center">${perc}%</td>
+              </tr>`;
+          });
+
+          html += `</tbody></table>`;
+
+          // Page break after each exam except the very last one
+          if (cIdx < classData.length - 1 || eIdx < classExams.length - 1) {
+              html += `<div style="page-break-before: always;"></div>`;
+          }
+      }
+    }
+
+    const fullHtmlContent = generateHTML(html, `${sessionName}_Full_Session_Report`);
+    downloadHTML(fullHtmlContent, `${sessionName}_Full_Session_Report.html`);
   };
 
   const handleDetailChange = (session, field, value) => {
@@ -209,8 +342,18 @@ export default function BrowsePage() {
                     {expandedSession === session ? <ChevronDown className="mr-2 h-5 w-5" /> : <ChevronRight className="mr-2 h-5 w-5" />}
                     {session}
                   </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={(e) => handleDownloadFullSessionReport(e, session)}
+                        title="Download Full Session Report"
+                        className="text-green-600 hover:bg-green-50 hover:text-green-700 hidden sm:flex"
+                    >
+                        <Download className="h-4 w-4 mr-2" /> Session Report
+                    </Button>
                   {user && (
-                    <div className="flex items-center gap-2">
+                    <>
                       <Button
                         variant="ghost"
                         size="sm"
@@ -232,8 +375,9 @@ export default function BrowsePage() {
                       >
                         <Trash className="h-4 w-4" />
                       </Button>
-                    </div>
+                    </>
                   )}
+                  </div>
                 </div>
 
                 {expandedSession === session && (

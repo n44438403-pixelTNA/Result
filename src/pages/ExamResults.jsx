@@ -10,7 +10,7 @@ import ExamParams from '../components/admin/ExamParams';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import MarksheetModal from '../components/MarksheetModal';
 import StudentGraphModal from '../components/StudentGraphModal';
-import { generateMHTML, downloadMHTML } from '../lib/mhtml';
+import { generateHTML, downloadHTML } from '../lib/html';
 
 export default function ExamResults() {
   const { user } = useAuth();
@@ -459,8 +459,8 @@ export default function ExamResults() {
 
       html += `</tbody></table>`;
 
-      const mhtmlContent = generateMHTML(html, `${examId}_Full_Report`);
-      downloadMHTML(mhtmlContent, `${examId}_Full_Report.mhtml`);
+      const fullHtmlContent = generateHTML(html, `${examId}_Full_Report`);
+      downloadHTML(fullHtmlContent, `${examId}_Full_Report.html`);
   };
 
   if (loading) return <div>Loading...</div>;

@@ -8,7 +8,7 @@ import { ArrowLeft, Printer, FileText, BarChart, Search, Maximize2, Minimize2 } 
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '../components/ui/Table';
 import ClassMarksheetModal from '../components/ClassMarksheetModal';
 import StudentGraphModal from '../components/StudentGraphModal';
-import { generateMHTML, downloadMHTML } from '../lib/mhtml';
+import { generateHTML, downloadHTML } from '../lib/html';
 
 export default function ClassResult() {
   const { session, classId } = useParams();
@@ -271,8 +271,8 @@ export default function ClassResult() {
           html += `</tbody></table>`;
       });
 
-      const mhtmlContent = generateMHTML(html, `${classId}_Full_Report`);
-      downloadMHTML(mhtmlContent, `${classId}_Full_Report.mhtml`);
+      const fullHtmlContent = generateHTML(html, `${classId}_Full_Report`);
+      downloadHTML(fullHtmlContent, `${classId}_Full_Report.html`);
   };
 
   if (loading) return <div className="p-8 text-center text-gray-500">Loading Aggregate Results...</div>;
