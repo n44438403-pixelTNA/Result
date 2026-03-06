@@ -61,14 +61,18 @@ export default function HomePage() {
         <h2 className="text-xl font-bold text-gray-700 mb-4 tracking-wider">
             {instituteSettings?.tagline || "Manage and view examination results efficiently."}
         </h2>
-        <p className="text-gray-500 max-w-lg mx-auto font-medium">
-          Students can view results organized by session, class, and exam. Administrators can securely edit results.
-        </p>
-        {(instituteSettings?.address || instituteSettings?.directorName) && (
-            <div className="mt-6 text-sm text-gray-400 font-semibold tracking-widest uppercase">
-                {instituteSettings?.address} {instituteSettings?.address && instituteSettings?.directorName && ' | '} {instituteSettings?.directorName && `Director: ${instituteSettings?.directorName}`}
+        <div className="text-sm font-semibold text-gray-500 mt-2 flex justify-center gap-4 flex-wrap">
+          {instituteSettings?.directorName && <span>Director: {instituteSettings.directorName}</span>}
+          {instituteSettings?.mobileNumber && <span>Mob: {instituteSettings.mobileNumber}</span>}
+        </div>
+        {instituteSettings?.address && (
+            <div className="mt-2 text-sm text-gray-500 font-medium">
+                {instituteSettings.address}
             </div>
         )}
+        <p className="text-gray-500 max-w-lg mx-auto font-medium mt-6 border-t pt-4">
+          Students can view results organized by session, class, and exam. Administrators can securely edit results.
+        </p>
       </div>
 
       <div className="flex justify-center w-full max-w-xl">

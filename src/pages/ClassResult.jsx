@@ -188,10 +188,24 @@ export default function ClassResult() {
   };
 
   const handleDownloadFullClassReport = () => {
-      let html = `<div class="text-center mb-6">
-          <h1 class="text-3xl font-bold">${sessionDetails?.instituteName || 'Institute'}</h1>
-          <h2 class="text-xl font-semibold">Full Class Report: ${classId}</h2>
-          <p>Session: ${session}</p>
+      const institute = sessionDetails?.instituteName || 'Institute / Coaching Name';
+      const director = sessionDetails?.director || '';
+      const est = sessionDetails?.est || '';
+      const mobile = sessionDetails?.mobile || '';
+      const address = sessionDetails?.address || '';
+
+      let html = `<div class="text-center mb-6 border-b-2 border-gray-800 pb-4">
+          <h1 class="text-3xl font-extrabold uppercase tracking-wider text-gray-900">${institute}</h1>
+          <div class="text-sm font-semibold text-gray-600 mt-1 flex justify-center gap-4 flex-wrap">
+            ${director ? `<span>Director: ${director}</span>` : ''}
+            ${est ? `<span>Est: ${est}</span>` : ''}
+            ${mobile ? `<span>Mob: ${mobile}</span>` : ''}
+          </div>
+          ${address ? `<div class="text-sm text-gray-700 mt-1 font-medium">${address}</div>` : ''}
+          <div class="mt-4 pt-2 border-t border-gray-300">
+             <h2 class="text-xl font-bold text-gray-800">Full Class Report: ${classId}</h2>
+             <p class="text-md text-gray-600 font-medium">Session: ${session}</p>
+          </div>
       </div>`;
 
       // Generate a distinct table for each exam
