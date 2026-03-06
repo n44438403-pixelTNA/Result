@@ -45,9 +45,13 @@ export default function LoginPage() {
         <h2 className="text-xl font-bold text-gray-700 mb-4 tracking-wider">
             {instituteSettings?.tagline || "Manage and view examination results efficiently."}
         </h2>
-        {(instituteSettings?.address || instituteSettings?.directorName) && (
-            <div className="mt-2 text-sm text-gray-400 font-semibold tracking-widest uppercase">
-                {instituteSettings?.address} {instituteSettings?.address && instituteSettings?.directorName && ' | '} {instituteSettings?.directorName && `Director: ${instituteSettings?.directorName}`}
+        <div className="text-sm font-semibold text-gray-500 mt-2 flex justify-center gap-4 flex-wrap">
+          {instituteSettings?.directorName && <span>Director: {instituteSettings.directorName}</span>}
+          {instituteSettings?.mobileNumber && <span>Mob: {instituteSettings.mobileNumber}</span>}
+        </div>
+        {instituteSettings?.address && (
+            <div className="mt-2 text-sm text-gray-500 font-medium border-b pb-4">
+                {instituteSettings.address}
             </div>
         )}
       </div>
