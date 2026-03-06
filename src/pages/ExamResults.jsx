@@ -313,13 +313,13 @@ export default function ExamResults() {
               <div style="flex: 1; border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; background: #fff; min-width: 200px;">
                   <h3 style="font-size: 0.875rem; font-weight: bold; color: #15803d; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.5rem; margin-top: 0;">Top 5 Scorers</h3>
                   <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem;">
-                      ${top5Scorers.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0;"><span style="padding-right: 0.5rem;">${s.name || s.rollNo}</span><span style="font-weight: 600;">${s.totalObtained}</span></li>`).join('')}
+                      ${top5Scorers.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0;"><span style="padding-right: 0.5rem;">${s.name || s.rollNo}</span><span style="font-weight: 600;">${s.totalObtained} <span style="font-size: 0.75rem; color: #9ca3af; font-weight: normal;">(${calculatePercentage(s)}%)</span></span></li>`).join('')}
                   </ul>
               </div>
               <div style="flex: 1; border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; background: #fff; min-width: 200px;">
                   <h3 style="font-size: 0.875rem; font-weight: bold; color: #b91c1c; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.5rem; margin-top: 0;">Lowest 5 Scorers</h3>
                   <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem;">
-                      ${lowest5Scorers.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0;"><span style="padding-right: 0.5rem;">${s.name || s.rollNo}</span><span style="font-weight: 600;">${s.totalObtained}</span></li>`).join('')}
+                      ${lowest5Scorers.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0;"><span style="padding-right: 0.5rem;">${s.name || s.rollNo}</span><span style="font-weight: 600;">${s.totalObtained} <span style="font-size: 0.75rem; color: #9ca3af; font-weight: normal;">(${calculatePercentage(s)}%)</span></span></li>`).join('')}
                   </ul>
               </div>
               <div style="flex: 1; border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; background: #fff; min-width: 200px;">
@@ -643,7 +643,7 @@ export default function ExamResults() {
                           {top5Scorers.map((s, i) => (
                               <li key={i} className="flex justify-between">
                                   <span className="truncate pr-2">{s.name || s.rollNo}</span>
-                                  <span className="font-semibold">{s.totalObtained}</span>
+                                  <span className="font-semibold">{s.totalObtained} <span className="text-xs text-gray-400 font-normal">({calculatePercentage(s)}%)</span></span>
                               </li>
                           ))}
                       </ul>
@@ -654,7 +654,7 @@ export default function ExamResults() {
                           {lowest5Scorers.map((s, i) => (
                               <li key={i} className="flex justify-between">
                                   <span className="truncate pr-2">{s.name || s.rollNo}</span>
-                                  <span className="font-semibold">{s.totalObtained}</span>
+                                  <span className="font-semibold">{s.totalObtained} <span className="text-xs text-gray-400 font-normal">({calculatePercentage(s)}%)</span></span>
                               </li>
                           ))}
                       </ul>
