@@ -309,29 +309,29 @@ export default function ExamResults() {
       </div>`;
 
       if (totalStudents > 0) {
-          html += `<div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap;">
-              <div style="flex: 1; border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; background: #fff; min-width: 200px;">
-                  <h3 style="font-size: 0.875rem; font-weight: bold; color: #15803d; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.5rem; margin-top: 0;">Top 5 Scorers</h3>
-                  <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem;">
-                      ${top5Scorers.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0;"><span style="padding-right: 0.5rem;">${s.name || s.rollNo}</span><span style="font-weight: 600;">${s.totalObtained} <span style="font-size: 0.75rem; color: #9ca3af; font-weight: normal;">(${calculatePercentage(s)}%)</span></span></li>`).join('')}
+          html += `<div style="display: flex; gap: 1rem; margin-bottom: 2rem; flex-wrap: wrap; justify-content: center; max-width: 1000px; margin-left: auto; margin-right: auto;">
+              <div style="flex: 0 1 220px; border: 1px solid #e5e7eb; padding: 0.75rem; border-radius: 0.5rem; background: #fff;">
+                  <h3 style="font-size: 0.875rem; font-weight: bold; color: #15803d; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.5rem; margin-top: 0; text-align: center;">Top 5 Scorers</h3>
+                  <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.8rem;">
+                      ${top5Scorers.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px dashed #f3f4f6;"><span style="padding-right: 0.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${s.name || s.rollNo}</span><span style="font-weight: 600; white-space: nowrap;">${s.totalObtained} <span style="font-size: 0.7rem; color: #9ca3af; font-weight: normal;">(${calculatePercentage(s)}%)</span></span></li>`).join('')}
                   </ul>
               </div>
-              <div style="flex: 1; border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; background: #fff; min-width: 200px;">
-                  <h3 style="font-size: 0.875rem; font-weight: bold; color: #b91c1c; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.5rem; margin-top: 0;">Lowest 5 Scorers</h3>
-                  <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem;">
-                      ${lowest5Scorers.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0;"><span style="padding-right: 0.5rem;">${s.name || s.rollNo}</span><span style="font-weight: 600;">${s.totalObtained} <span style="font-size: 0.75rem; color: #9ca3af; font-weight: normal;">(${calculatePercentage(s)}%)</span></span></li>`).join('')}
+              <div style="flex: 0 1 220px; border: 1px solid #e5e7eb; padding: 0.75rem; border-radius: 0.5rem; background: #fff;">
+                  <h3 style="font-size: 0.875rem; font-weight: bold; color: #b91c1c; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.5rem; margin-top: 0; text-align: center;">Lowest 5 Scorers</h3>
+                  <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.8rem;">
+                      ${lowest5Scorers.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px dashed #f3f4f6;"><span style="padding-right: 0.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${s.name || s.rollNo}</span><span style="font-weight: 600; white-space: nowrap;">${s.totalObtained} <span style="font-size: 0.7rem; color: #9ca3af; font-weight: normal;">(${calculatePercentage(s)}%)</span></span></li>`).join('')}
                   </ul>
               </div>
-              <div style="flex: 1; border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; background: #fff; min-width: 200px;">
-                  <h3 style="font-size: 0.875rem; font-weight: bold; color: #6d28d9; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.5rem; margin-top: 0;">Most Present</h3>
-                  <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem;">
-                      ${top5MostPresent.length > 0 ? top5MostPresent.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0;"><span style="padding-right: 0.5rem;">${s.name || s.rollNo}</span><span style="font-weight: 600;">${s.stats.present}d</span></li>`).join('') : '<li style="color: #9ca3af; font-style: italic;">No attendance data</li>'}
+              <div style="flex: 0 1 220px; border: 1px solid #e5e7eb; padding: 0.75rem; border-radius: 0.5rem; background: #fff;">
+                  <h3 style="font-size: 0.875rem; font-weight: bold; color: #6d28d9; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.5rem; margin-top: 0; text-align: center;">Most Present</h3>
+                  <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.8rem;">
+                      ${top5MostPresent.length > 0 ? top5MostPresent.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px dashed #f3f4f6;"><span style="padding-right: 0.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${s.name || s.rollNo}</span><span style="font-weight: 600; white-space: nowrap;">${s.stats.present}d</span></li>`).join('') : '<li style="color: #9ca3af; font-style: italic; text-align: center; padding-top: 0.5rem;">No attendance data</li>'}
                   </ul>
               </div>
-              <div style="flex: 1; border: 1px solid #e5e7eb; padding: 1rem; border-radius: 0.5rem; background: #fff; min-width: 200px;">
-                  <h3 style="font-size: 0.875rem; font-weight: bold; color: #c2410c; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.5rem; margin-top: 0;">Most Absent</h3>
-                  <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem;">
-                      ${top5MostAbsent.length > 0 ? top5MostAbsent.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0;"><span style="padding-right: 0.5rem;">${s.name || s.rollNo}</span><span style="font-weight: 600;">${s.stats.absent}d</span></li>`).join('') : '<li style="color: #9ca3af; font-style: italic;">No absences recorded</li>'}
+              <div style="flex: 0 1 220px; border: 1px solid #e5e7eb; padding: 0.75rem; border-radius: 0.5rem; background: #fff;">
+                  <h3 style="font-size: 0.875rem; font-weight: bold; color: #c2410c; border-bottom: 1px solid #e5e7eb; padding-bottom: 0.5rem; margin-bottom: 0.5rem; margin-top: 0; text-align: center;">Most Absent</h3>
+                  <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.8rem;">
+                      ${top5MostAbsent.length > 0 ? top5MostAbsent.map(s => `<li style="display: flex; justify-content: space-between; padding: 0.25rem 0; border-bottom: 1px dashed #f3f4f6;"><span style="padding-right: 0.5rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${s.name || s.rollNo}</span><span style="font-weight: 600; white-space: nowrap;">${s.stats.absent}d</span></li>`).join('') : '<li style="color: #9ca3af; font-style: italic; text-align: center; padding-top: 0.5rem;">No absences recorded</li>'}
                   </ul>
               </div>
           </div>`;
