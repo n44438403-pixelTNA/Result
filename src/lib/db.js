@@ -103,7 +103,21 @@ export const dbService = {
     try {
       const docRef = doc(db, COLLECTION_SESSIONS, sessionName);
       const data = await safeGet(docRef);
-      return data?.details || {
+      if (data?.details) return data.details;
+
+      // Fallback to global institute settings if no specific session details exist
+      const globalDoc = await safeGet(doc(db, 'settings', SETTINGS_DOC_ID));
+      if (globalDoc) {
+        return {
+          instituteName: globalDoc.instituteName || '',
+          est: globalDoc.tagline ? globalDoc.tagline.replace('Est. ', '') : '',
+          director: globalDoc.directorName || '',
+          mobile: globalDoc.mobileNumber || '',
+          address: globalDoc.address || ''
+        };
+      }
+
+      return {
         instituteName: 'Demo Coaching Center',
         est: '2020',
         director: 'John Doe',
@@ -119,6 +133,17 @@ export const dbService = {
   updateSessionDetails: async (sessionName, details) => {
     const docRef = doc(db, COLLECTION_SESSIONS, sessionName);
     await setDoc(docRef, { details }, { merge: true });
+
+    // Also update global settings to ensure app-wide consistency
+    const globalSettings = {
+      instituteName: details.instituteName || '',
+      tagline: details.est ? `Est. ${details.est}` : '',
+      directorName: details.director || '',
+      mobileNumber: details.mobile || '',
+      address: details.address || ''
+    };
+    await setDoc(doc(db, 'settings', SETTINGS_DOC_ID), globalSettings, { merge: true });
+
     return details;
   },
 
